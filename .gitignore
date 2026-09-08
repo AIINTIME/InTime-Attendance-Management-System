@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Environment files (never commit real secrets)
+.env
+.env.local
+.env.*.local
+
+# Build output
+Frontend/dist/
+Frontend/build/
+
+# Uploaded user content
+Backend/src/uploads/profile/*
+!Backend/src/uploads/profile/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Vite
+Frontend/.vite/
+
+# Local HTTPS dev certificate (mkcert) -- machine-specific, never commit
+Frontend/.cert/
+Frontend/public/mkcert-root-ca.pem
+Frontend/public/mkcert-root-ca.crt
