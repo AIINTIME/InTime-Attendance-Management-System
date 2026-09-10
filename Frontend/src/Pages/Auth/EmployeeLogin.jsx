@@ -7,7 +7,7 @@ import { DEMO_CREDENTIALS } from "../../Utils/constants";
 import "../../Styles/Login.css";
 
 export default function EmployeeLogin() {
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState("light");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

@@ -1,5 +1,6 @@
 const express = require("express");
 const adminController = require("../controllers/adminController");
+const settingsController = require("../controllers/settingsController");
 const { requireAuth } = require("../middleware/authMiddleware");
 const { requireAdmin } = require("../middleware/adminMiddleware");
 const { upload, persistProfilePhoto } = require("../middleware/uploadMiddleware");
@@ -22,6 +23,7 @@ router.post(
   persistProfilePhoto,
   adminController.uploadProfilePhoto
 );
+router.delete("/profile/photo", adminController.deleteProfilePhoto);
 
 router.get("/employees", adminController.listEmployeesValidators, adminController.listEmployees);
 router.post("/employees", adminController.createEmployeeValidators, adminController.createEmployee);
@@ -40,5 +42,8 @@ router.get(
 );
 
 router.get("/attendance", adminController.listAttendanceValidators, adminController.listAttendance);
+
+router.get("/settings", settingsController.getSettings);
+router.put("/settings", settingsController.updateSettingsValidators, settingsController.updateSettings);
 
 module.exports = router;

@@ -1,0 +1,1127 @@
+/* ==========================================================================
+   InTime – Employee Attendance Logs Page Styles
+   Pixel-perfect styling matching InTime Employee Attendance Logs Mockup
+   ========================================================================== */
+
+.attlog-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ══════════════════════════ TOP HEADER BAR ══════════════════════════ */
+.attlog-top-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.attlog-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.attlog-main-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.attlog-main-subtitle {
+  font-size: 14px;
+  color: #64748B;
+  margin: 0;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.attlog-actions-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ══════════════════════════ UNIFIED ACTION & FILTER CONTROLS (MATCHING EMPLOYEE SECTION) ══════════════════════════ */
+.att-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.att-btn:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.att-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.att-btn-filter-active {
+  border-color: #0074f1 !important;
+  background: #f0f7ff !important;
+}
+
+.att-btn-filter-disabled {
+  opacity: 0.42 !important;
+  cursor: not-allowed !important;
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: none !important;
+}
+
+.att-btn-filter-disabled select,
+.att-btn-filter-disabled input {
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  color: #94a3b8 !important;
+}
+
+.att-month-year-combo {
+  position: relative;
+  padding: 0 10px;
+}
+
+.att-employee-pill {
+  position: relative;
+  cursor: pointer;
+  padding: 0 12px;
+}
+
+.att-combo-half {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  cursor: pointer;
+  flex: 1;
+}
+
+.att-btn svg {
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.att-month-year-divider {
+  width: 1px;
+  height: 16px;
+  background: #e2e8f0;
+  margin: 0 2px;
+  pointer-events: none;
+}
+
+.att-month-select-native {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none !important;
+  background: transparent !important;
+  font: inherit;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #334155 !important;
+  cursor: pointer;
+  outline: none;
+  padding: 0 !important;
+  margin: 0;
+  width: auto !important;
+  min-height: 38px !important;
+  height: 38px !important;
+  line-height: 38px !important;
+  flex: 1 1 auto;
+}
+
+.att-employee-select-native {
+  max-width: 175px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.att-date-range-combo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+}
+
+.att-date-input-native {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none !important;
+  background: transparent !important;
+  font-family: inherit;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #334155 !important;
+  cursor: pointer;
+  outline: none;
+  padding: 0 !important;
+  margin: 0;
+  width: auto !important;
+  min-height: 38px !important;
+  height: 38px !important;
+  line-height: 38px !important;
+  box-shadow: none !important;
+  flex: 1 1 auto;
+}
+
+.att-date-input-native::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+  margin: 0;
+  padding: 0;
+}
+
+.att-date-range-sep {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  padding: 0 2px;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Export Button matching screenshot */
+.attlog-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1.5px solid #0074F1;
+  background: #FFFFFF;
+  color: #0074F1;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 2px rgba(0, 116, 241, 0.05);
+  white-space: nowrap;
+}
+
+.attlog-export-btn:hover {
+  background: #F0F7FF;
+  border-color: #0060C7;
+  color: #0060C7;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 116, 241, 0.15);
+}
+
+.attlog-export-wrap {
+  position: relative;
+}
+
+.attlog-export-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 190px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+  padding: 6px;
+  z-index: 40;
+  animation: attlogExportMenuIn 0.15s ease-out;
+}
+
+@keyframes attlogExportMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.attlog-export-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.attlog-export-menu-item:hover {
+  background: #F0F7FF;
+  color: #0074F1;
+}
+
+/* ══════════════════════════ COLLAPSIBLE FILTER DRAWER ══════════════════════════ */
+.attlog-filter-drawer {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  animation: filterDrawerSlide 0.18s ease-out;
+}
+
+@keyframes filterDrawerSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.attlog-filter-drawer-inner {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.attlog-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.attlog-filter-field label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.attlog-filter-field input,
+.attlog-filter-field select {
+  height: 38px;
+  padding: 0 12px !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  color: #0F172A !important;
+  background: #FFFFFF !important;
+  outline: none;
+  min-width: 140px;
+}
+
+.attlog-filter-field input:focus,
+.attlog-filter-field select:focus {
+  border-color: #0074F1 !important;
+  box-shadow: 0 0 0 3px rgba(0, 116, 241, 0.1) !important;
+}
+
+.attlog-filter-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.attlog-drawer-btn {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.attlog-drawer-btn.reset {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  color: #475569;
+}
+
+.attlog-drawer-btn.reset:hover {
+  background: #F8FAFC;
+}
+
+.attlog-drawer-btn.apply {
+  background: #0074F1;
+  border: 1px solid #0074F1;
+  color: #FFFFFF;
+}
+
+.attlog-drawer-btn.apply:hover {
+  background: #0060C7;
+}
+
+.attlog-drawer-btn.close {
+  width: 38px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F1F5F9;
+  border: none;
+  color: #64748B;
+}
+
+.attlog-drawer-btn.close:hover {
+  background: #E2E8F0;
+  color: #0F172A;
+}
+
+/* ══════════════════════════ TABLE CARD ══════════════════════════ */
+/* Fixed-size card: header/footer stay put, only the table body scrolls --
+   keeps the card from ballooning to an almost-empty page on a light day
+   or growing unbounded on a heavy one. */
+.attlog-card {
+  background: #FFFFFF;
+  border: 1px solid #EEF2F6;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 250px);
+  min-height: 410px;
+}
+
+/* Card Header Controls Bar (Above Table) */
+.attlog-card-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px 14px;
+  flex-shrink: 0;
+}
+
+.attlog-card-header-spacer {
+  flex: 1;
+}
+
+.attlog-card-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.attlog-count-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+}
+
+.attlog-select-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.attlog-per-page-select {
+  height: 36px;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0 34px 0 14px !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #0F172A !important;
+  background: #FFFFFF !important;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.attlog-per-page-select:hover {
+  border-color: #CBD5E1 !important;
+}
+
+.attlog-per-page-select:focus {
+  border-color: #0074F1 !important;
+}
+
+.attlog-select-chevron {
+  position: absolute;
+  right: 12px;
+  color: #64748B;
+  pointer-events: none;
+}
+
+/* ══════════════════════════ TABLE ══════════════════════════ */
+.attlog-table-wrap {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: auto;
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 #F8FAFC;
+}
+
+.attlog-table-wrap::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.attlog-table-wrap::-webkit-scrollbar-track {
+  background: #F8FAFC;
+  border-radius: 4px;
+}
+
+.attlog-table-wrap::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+.attlog-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+.attlog-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 1260px;
+}
+
+/* Date group section header */
+.attlog-date-group-row td {
+  padding: 8px 18px;
+  background: #F0F7FF;
+  border-top: 1px solid #E2E8F0;
+  border-bottom: 1px solid #E2E8F0;
+  position: sticky;
+  top: 45px;
+  z-index: 5;
+}
+
+.attlog-date-group-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.attlog-date-group-left {
+  display: inline-flex;
+  align-items: center;
+}
+
+.attlog-date-group-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0074F1;
+}
+
+.attlog-date-group-count {
+  margin-left: 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748B;
+}
+
+.attlog-criteria-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  background: #FFFFFF;
+  padding: 4px 14px;
+  border-radius: 999px;
+  border: 1px solid #BFDBFE;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
+  margin-left: 6px;
+}
+
+.criteria-legend-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1E40AF;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.criteria-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.criteria-legend-item .checkin-status-dot {
+  width: 8px;
+  height: 8px;
+}
+
+.criteria-legend-label {
+  line-height: 1;
+}
+
+/* Table Header */
+.attlog-table thead th {
+  text-align: left;
+  padding: 14px 18px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0F172A;
+  background: #FFFFFF;
+  border-top: none;
+  border-bottom: 1px solid #E2E8F0;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.th-num {
+  width: 44px;
+}
+
+.th-employee {
+  min-width: 180px;
+}
+
+.th-dept {
+  min-width: 130px;
+}
+
+.th-checkin,
+.th-checkout {
+  min-width: 110px;
+}
+
+.th-location {
+  min-width: 180px;
+}
+
+.th-workmode {
+  min-width: 100px;
+}
+
+.th-timestatus {
+  min-width: 110px;
+}
+
+.th-hours {
+  min-width: 100px;
+}
+
+.th-sortable {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #0F172A;
+  cursor: pointer;
+  user-select: none;
+}
+
+.th-sortable svg {
+  color: #0F172A;
+}
+
+/* Table Rows & Cells */
+.attlog-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.attlog-table tbody td {
+  padding: 14px 18px;
+  font-size: 13px;
+  color: #334155;
+  border-bottom: 1px solid #F8FAFC;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.attlog-table tbody tr:hover {
+  background: #F8FAFC;
+}
+
+.attlog-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Number cell */
+.cell-num {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748B;
+}
+
+/* Employee cell */
+.cell-emp {
+  min-width: 180px;
+}
+
+.attlog-emp-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.attlog-avatar-img {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.attlog-avatar-fallback {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #DBEAFE;
+  color: #1D4ED8;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.attlog-emp-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.attlog-emp-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0F172A;
+  line-height: 1.2;
+}
+
+.attlog-emp-id {
+  font-size: 11.5px;
+  color: #64748B;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.attlog-emp-profile-link:hover .attlog-emp-name {
+  color: #0074F1;
+}
+
+/* Department cell */
+.cell-dept {
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+}
+
+/* Date cell */
+.cell-date {
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+}
+
+/* Check In / Out Time cell */
+.cell-time {
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+}
+
+/* Location cell */
+.cell-location {
+  min-width: 180px;
+}
+
+.attlog-location-link {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 7px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.attlog-pin-icon {
+  color: #0074F1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.attlog-loc-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.attlog-loc-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1E293B;
+  line-height: 1.2;
+}
+
+.attlog-loc-coords {
+  font-size: 11px;
+  color: #64748B;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.attlog-location-link:hover .attlog-loc-title {
+  color: #0074F1;
+  text-decoration: underline;
+}
+
+.cell-empty-dash {
+  color: #94A3B8;
+}
+
+/* Total Hours cell */
+.cell-hours {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+}
+
+/* Note column */
+.cell-note {
+  white-space: nowrap;
+}
+
+.attlog-view-note-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 7px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #0074F1;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.attlog-view-note-btn:hover {
+  background: #F0F7FF;
+  border-color: #BFDBFE;
+}
+
+/* Note popup */
+.attlog-note-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+
+.attlog-note-modal-card {
+  background: #FFFFFF;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.15);
+  padding: 20px 22px;
+}
+
+.attlog-note-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.attlog-note-modal-header h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+}
+
+.attlog-note-modal-close {
+  border: none;
+  background: transparent;
+  color: #64748B;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.attlog-note-modal-close:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+
+.attlog-note-modal-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #64748B;
+  margin-bottom: 14px;
+}
+
+.attlog-note-modal-meta-sep {
+  color: #CBD5E1;
+}
+
+.attlog-note-modal-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #334155;
+  background: #F8FAFC;
+  border: 1px solid #EEF2F6;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* ══════════════════════════ BADGES & PILLS ══════════════════════════ */
+.cell-badge {
+  white-space: nowrap;
+}
+
+.attlog-workmode-badge {
+  gap: 5px;
+}
+
+.attlog-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  min-width: 68px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* Work Mode Badges */
+.badge-office {
+  background: #E6F9EE;
+  color: #12A150;
+  border: 1px solid rgba(18, 161, 80, 0.25);
+}
+
+.badge-remote {
+  background: #E8F1FE;
+  color: #1A73E8;
+  border: 1px solid rgba(26, 115, 232, 0.25);
+}
+
+/* Time Status Badges aligned with Organization Late Status Criteria */
+.badge-ontime {
+  background: #E6F9EE;
+  color: #059669;
+}
+
+.badge-slightlate {
+  background: #EFF6FF;
+  color: #2563EB;
+}
+
+.badge-late {
+  background: #FFF7ED;
+  color: #EA580C;
+}
+
+.badge-verylate {
+  background: #FEF2F2;
+  color: #DC2626;
+}
+
+.badge-inprogress {
+  background: #F1F5F9;
+  color: #475569;
+}
+
+/* ══════════════════════════ FOOTER / PAGINATION ══════════════════════════ */
+.attlog-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 24px;
+  border-top: 1px solid #F1F5F9;
+  background: #FFFFFF;
+  flex-shrink: 0;
+}
+
+.attlog-footer-counter {
+  font-size: 13px;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.attlog-pagination-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Prev / Next Arrows */
+.attlog-page-nav-arrow {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.attlog-page-nav-arrow:hover:not(:disabled) {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+  color: #0F172A;
+}
+
+.attlog-page-nav-arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Numbered Page Buttons */
+.attlog-pagination-num-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.attlog-pagination-num-btn:hover:not(.active) {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+  color: #0F172A;
+}
+
+.attlog-pagination-num-btn.active {
+  background: #0074F1 !important;
+  border-color: #0074F1 !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 116, 241, 0.28);
+}
+
+.attlog-pagination-ellipsis {
+  width: 24px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94A3B8;
+  font-size: 14px;
+  user-select: none;
+}
+
+/* Spinner */
+.attlog-spinner-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+}
+
+.attlog-card > .empty-state {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ══════════════════════════ RESPONSIVE BREAKPOINTS ══════════════════════════ */
+@media (max-width: 900px) {
+  .attlog-top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .attlog-actions-area {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .attlog-card-header-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .attlog-card-header-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 640px) {
+  .attlog-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .attlog-pagination-nav {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}

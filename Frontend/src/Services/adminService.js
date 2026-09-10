@@ -12,10 +12,13 @@ export async function changeAdminPassword(payload) {
 export async function uploadAdminProfilePhoto(file) {
   const formData = new FormData();
   formData.append("photo", file);
-  const { data } = await api.post("/admin/profile/photo", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  return data.data.profilePhoto;
+  const { data } = await api.post("/admin/profile/photo", formData);
+  return data.data;
+}
+
+export async function deleteAdminProfilePhoto() {
+  const { data } = await api.delete("/admin/profile/photo");
+  return data.data;
 }
 
 export async function getDashboard() {
@@ -71,4 +74,14 @@ export function buildExportUrl(kind, params = {}) {
   const search = new URLSearchParams(params).toString();
   const base = import.meta.env.VITE_API_URL || "/api";
   return `${base}/reports/attendance/${kind}${search ? `?${search}` : ""}`;
+}
+
+export async function getOrgSettings() {
+  const { data } = await api.get("/admin/settings");
+  return data.data.settings;
+}
+
+export async function updateOrgSettings(payload) {
+  const { data } = await api.put("/admin/settings", payload);
+  return data.data.settings;
 }

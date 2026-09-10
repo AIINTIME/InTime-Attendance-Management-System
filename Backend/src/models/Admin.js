@@ -12,6 +12,7 @@ const adminSchema = new mongoose.Schema(
     },
     passwordHash: { type: String, required: true, select: false },
     role: { type: String, default: "admin", enum: ["admin"] },
+    designation: { type: String, default: "senior hr", trim: true },
     profilePhoto: { type: String, default: "" },
     mustChangePassword: { type: Boolean, default: false },
   },

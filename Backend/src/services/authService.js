@@ -19,6 +19,9 @@ function toPublicEmployee(employee) {
     department: employee.department,
     designation: employee.designation,
     profilePhoto: employee.profilePhoto,
+    phone: employee.phone || "",
+    dateOfBirth: employee.dateOfBirth || null,
+    gender: employee.gender || "",
     passkeyRegistered: employee.passkeyRegistered,
     mustChangePassword: employee.mustChangePassword,
   };
@@ -30,6 +33,7 @@ function toPublicAdmin(admin) {
     role: "admin",
     name: admin.name,
     email: admin.email,
+    designation: admin.designation || "senior hr",
     profilePhoto: admin.profilePhoto,
   };
 }

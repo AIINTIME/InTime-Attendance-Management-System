@@ -660,18 +660,21 @@ body, html {
   display: inline-block;
 }
 
-.status-dot.green  { background: var(--color-green); }
-.status-dot.red    { background: var(--color-red); }
+.status-dot.green  { background: #10B981; }
+.status-dot.red    { background: #EF4444; }
 .status-dot.yellow { background: var(--color-amber); }
-.status-dot.blue   { background: var(--color-blue); }
+.status-dot.blue   { background: #2563EB; }
+.status-dot.orange { background: #F97316; }
 
 .status-text {
   font-size: 12px;
   font-weight: 600;
 }
 
-.status-text.green { color: var(--color-green); }
-.status-text.red   { color: var(--color-red); }
+.status-text.green  { color: #059669; }
+.status-text.blue   { color: #2563EB; }
+.status-text.orange { color: #EA580C; }
+.status-text.red    { color: #DC2626; }
 
 .work-status-badge {
   background: var(--color-green-bg);

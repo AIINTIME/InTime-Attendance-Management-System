@@ -16,6 +16,27 @@ function assertValid(req) {
   }
 }
 
+// Every newly created employee starts with this password and
+// `mustChangePassword: true`, forcing them to set their own at first login.
+const DEFAULT_TEMPORARY_PASSWORD = "Welcome@26INT";
+
+// Scans existing "EMP<n>" ids for the highest n and returns the next one
+// (EMP01, EMP02, ... EMP10, ... EMP100). Combined with the retry-on-conflict
+// loop in createEmployee, this stays correct even if two admins create an
+// employee at the same moment.
+async function generateNextEmployeeId() {
+  const employees = await Employee.find({ employeeId: /^EMP\d+$/i }, { employeeId: 1 }).lean();
+  let max = 0;
+  for (const { employeeId } of employees) {
+    const match = /^EMP(\d+)$/i.exec(employeeId);
+    if (match) {
+      const value = parseInt(match[1], 10);
+      if (value > max) max = value;
+    }
+  }
+  return `EMP${String(max + 1).padStart(2, "0")}`;
+}
+
 // ---------------------------------------------------------------------------
 // Dashboard
 // ---------------------------------------------------------------------------
@@ -141,40 +162,53 @@ async function listEmployees(req, res, next) {
 }
 
 const createEmployeeValidators = [
-  body("employeeId").trim().notEmpty().withMessage("Employee ID is required."),
   body("name").trim().isLength({ min: 2 }).withMessage("Name is required."),
   body("email").isEmail().withMessage("A valid email is required.").normalizeEmail(),
   body("department").trim().notEmpty().withMessage("Department is required."),
   body("designation").trim().notEmpty().withMessage("Designation is required."),
-  body("temporaryPassword")
-    .isLength({ min: 8 })
-    .withMessage("Temporary password must be at least 8 characters."),
+  body("phone").optional({ checkFalsy: true }).trim(),
 ];
 
 async function createEmployee(req, res, next) {
   try {
     assertValid(req);
-    const { employeeId, name, email, department, designation, temporaryPassword } = req.body;
+    const { name, email, department, designation, phone } = req.body;
 
-    const existing = await Employee.findOne({
-      $or: [{ email: email.toLowerCase() }, { employeeId: employeeId.toUpperCase() }],
-    });
+    const existing = await Employee.findOne({ email: email.toLowerCase() });
     if (existing) {
-      throw new ApiError(409, "An employee with this ID or email already exists.", "EMPLOYEE_EXISTS");
+      throw new ApiError(409, "An employee with this email already exists.", "EMPLOYEE_EXISTS");
     }
 
-    const passwordHash = await hashPassword(temporaryPassword);
-    const employee = await Employee.create({
-      employeeId,
-      name,
-      email,
-      department,
-      designation,
-      passwordHash,
-      mustChangePassword: true,
-    });
+    const passwordHash = await hashPassword(DEFAULT_TEMPORARY_PASSWORD);
 
-    res.status(201).json({ success: true, message: "Employee created", data: { employee } });
+    let employee;
+    const MAX_ATTEMPTS = 5;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const employeeId = await generateNextEmployeeId();
+      try {
+        employee = await Employee.create({
+          employeeId,
+          name,
+          email,
+          department,
+          designation,
+          phone: phone || "",
+          passwordHash,
+          mustChangePassword: true,
+        });
+        break;
+      } catch (err) {
+        const isDuplicateId = err.code === 11000 && err.keyPattern?.employeeId;
+        if (isDuplicateId && attempt < MAX_ATTEMPTS) continue;
+        throw err;
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Employee created",
+      data: { employee, temporaryPassword: DEFAULT_TEMPORARY_PASSWORD },
+    });
   } catch (err) {
     next(err);
   }
@@ -225,6 +259,7 @@ const updateEmployeeValidators = [
   body("name").optional().trim().isLength({ min: 2 }),
   body("department").optional().trim().notEmpty(),
   body("designation").optional().trim().notEmpty(),
+  body("phone").optional({ checkFalsy: true }).trim(),
 ];
 
 async function updateEmployee(req, res, next) {
@@ -233,10 +268,11 @@ async function updateEmployee(req, res, next) {
     const employee = await Employee.findById(req.params.id);
     if (!employee) throw new ApiError(404, "Employee not found.", "NOT_FOUND");
 
-    const { name, department, designation } = req.body;
+    const { name, department, designation, phone } = req.body;
     if (name) employee.name = name;
     if (department) employee.department = department;
     if (designation) employee.designation = designation;
+    if (phone !== undefined) employee.phone = phone;
     await employee.save();
 
     res.json({ success: true, message: "Employee updated", data: { employee } });
@@ -247,6 +283,7 @@ async function updateEmployee(req, res, next) {
 
 const resetPasswordValidators = [
   body("temporaryPassword")
+    .optional({ checkFalsy: true })
     .isLength({ min: 8 })
     .withMessage("Temporary password must be at least 8 characters."),
 ];
@@ -257,11 +294,12 @@ async function resetEmployeePassword(req, res, next) {
     const employee = await Employee.findById(req.params.id);
     if (!employee) throw new ApiError(404, "Employee not found.", "NOT_FOUND");
 
-    employee.passwordHash = await hashPassword(req.body.temporaryPassword);
+    const temporaryPassword = req.body.temporaryPassword || DEFAULT_TEMPORARY_PASSWORD;
+    employee.passwordHash = await hashPassword(temporaryPassword);
     employee.mustChangePassword = true;
     await employee.save();
 
-    res.json({ success: true, message: "Password reset successfully" });
+    res.json({ success: true, message: "Password reset successfully", data: { temporaryPassword } });
   } catch (err) {
     next(err);
   }
@@ -352,12 +390,31 @@ async function getEmployeeAttendanceHistory(req, res, next) {
 // Admin's own profile
 // ---------------------------------------------------------------------------
 
-const updateProfileValidators = [body("name").optional().trim().isLength({ min: 2 })];
+const updateProfileValidators = [
+  body("name").optional().trim().isLength({ min: 2 }).withMessage("Name must be at least 2 characters."),
+  body("designation").optional().trim(),
+  body("email").optional().isEmail().withMessage("Valid email is required.").normalizeEmail(),
+  body("profilePhoto").optional().trim(),
+];
 
 async function updateProfile(req, res, next) {
   try {
     assertValid(req);
-    if (req.body.name) req.admin.name = req.body.name;
+    if (req.body.name) req.admin.name = req.body.name.trim();
+    if (req.body.designation !== undefined) req.admin.designation = req.body.designation.trim();
+    if (req.body.email) {
+      const newEmail = req.body.email.toLowerCase().trim();
+      if (newEmail !== req.admin.email.toLowerCase()) {
+        const existing = await Admin.findOne({ email: newEmail, _id: { $ne: req.admin._id } });
+        if (existing) {
+          throw new ApiError(409, "Email is already in use by another admin.", "EMAIL_IN_USE");
+        }
+        req.admin.email = newEmail;
+      }
+    }
+    if (req.body.profilePhoto !== undefined) {
+      req.admin.profilePhoto = req.body.profilePhoto;
+    }
     await req.admin.save();
     res.json({ success: true, message: "Profile updated", data: { user: toPublicAdmin(req.admin) } });
   } catch (err) {
@@ -396,7 +453,25 @@ async function uploadProfilePhoto(req, res, next) {
     }
     req.admin.profilePhoto = req.uploadedFilePath;
     await req.admin.save();
-    res.json({ success: true, message: "Profile photo updated", data: { profilePhoto: req.admin.profilePhoto } });
+    res.json({
+      success: true,
+      message: "Profile photo updated",
+      data: { profilePhoto: req.admin.profilePhoto, user: toPublicAdmin(req.admin) },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function deleteProfilePhoto(req, res, next) {
+  try {
+    req.admin.profilePhoto = "";
+    await req.admin.save();
+    res.json({
+      success: true,
+      message: "Profile photo removed",
+      data: { profilePhoto: "", user: toPublicAdmin(req.admin) },
+    });
   } catch (err) {
     next(err);
   }
@@ -409,6 +484,7 @@ module.exports = {
   changeOwnPasswordValidators,
   changeOwnPassword,
   uploadProfilePhoto,
+  deleteProfilePhoto,
   listEmployeesValidators,
   listEmployees,
   createEmployeeValidators,

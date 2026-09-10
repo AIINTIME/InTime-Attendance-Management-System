@@ -4,7 +4,15 @@ const crypto = require("crypto");
 const fs = require("fs");
 const { ApiError } = require("./errorMiddleware");
 
-const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "profile");
+// Vercel's serverless functions ship a read-only filesystem outside of
+// /tmp, and even /tmp is wiped between cold starts / different container
+// instances -- uploaded photos won't reliably persist there. This keeps
+// uploads working (not crashing) on Vercel for a quick test deployment,
+// but real persistence needs external object storage (S3, Vercel Blob,
+// Cloudinary, etc.) wired in separately.
+const UPLOAD_DIR = process.env.VERCEL
+  ? path.join("/tmp", "uploads", "profile")
+  : path.join(__dirname, "..", "uploads", "profile");
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);

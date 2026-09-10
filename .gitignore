@@ -30,3 +30,5 @@ Frontend/.vite/
 Frontend/.cert/
 Frontend/public/mkcert-root-ca.pem
 Frontend/public/mkcert-root-ca.crt
+.vercel
+.env*

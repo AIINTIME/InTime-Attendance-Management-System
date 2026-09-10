@@ -57,7 +57,10 @@ if (env.NODE_ENV !== "production") {
 
 app.use("/api", apiLimiter);
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// See src/middleware/uploadMiddleware.js for why this path differs on
+// Vercel (read-only filesystem outside /tmp).
+const uploadsDir = process.env.VERCEL ? path.join("/tmp", "uploads") : path.join(__dirname, "uploads");
+app.use("/uploads", express.static(uploadsDir));
 
 app.get("/api/health", (req, res) => {
   res.json({ success: true, message: "InTime Attendance API is running" });

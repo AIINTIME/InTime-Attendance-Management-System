@@ -17,6 +17,7 @@ import { getCurrentPosition } from "../../Utils/locationUtils";
 import { extractErrorMessage } from "../../Utils/validation";
 import { formatTime, formatMinutesAsHours } from "../../Utils/dateUtils";
 import { OFFICE_LOCATION, GOOGLE_MAPS_QUERY_URL } from "../../Utils/constants";
+import CheckInTime from "../../Components/Common/CheckInTime";
 import CheckOutFlowModal from "../../Components/Attendance/CheckOutFlowModal";
 import EarlyCheckOutWarningModal from "../../Components/Attendance/EarlyCheckOutWarningModal";
 import "../../Styles/TakeAttendance.css";
@@ -268,6 +269,7 @@ export default function Attendance() {
   const [flowAction, setFlowAction] = useState("CHECKIN"); // "CHECKIN" | "CHECKOUT"
   const [cardStep, setCardStep] = useState(null); // "reason" | "passkey-register" | "passkey-registering" | "passkey" | "location" | "submitting" | "success" | "error"
   const [cardError, setCardError] = useState("");
+  const [verifyFailedOnThisDevice, setVerifyFailedOnThisDevice] = useState(false);
   const [distanceReason, setDistanceReason] = useState("");
 
   /* Address state resolved from real coordinates */
@@ -378,6 +380,7 @@ export default function Attendance() {
     setActiveFlowCard(null);
     setCardStep(null);
     setCardError("");
+    setVerifyFailedOnThisDevice(false);
     setDistanceReason("");
     setFlowAction("CHECKIN");
   };
@@ -391,6 +394,7 @@ export default function Attendance() {
     setActiveFlowCard("OFFICE");
     setFlowAction("CHECKIN");
     setCardError("");
+    setVerifyFailedOnThisDevice(false);
     if (!user?.passkeyRegistered) {
       setCardStep("passkey-register");
     } else {
@@ -407,6 +411,7 @@ export default function Attendance() {
     setActiveFlowCard("DISTANCE");
     setFlowAction("CHECKIN");
     setCardError("");
+    setVerifyFailedOnThisDevice(false);
     setDistanceReason("");
     setCardStep("reason");
   };
@@ -431,7 +436,12 @@ export default function Attendance() {
       await registerPasskey(guessDeviceNickname());
       updateUser({ passkeyRegistered: true });
       toast.success("Biometric passkey registered!");
-      executePasskey(activeFlowCard, distanceReason);
+      setVerifyFailedOnThisDevice(false);
+      if (flowAction === "CHECKOUT") {
+        executeCheckOutPasskey();
+      } else {
+        executePasskey(activeFlowCard, distanceReason);
+      }
     } catch (err) {
       setCardError(extractErrorMessage(err, "Passkey registration failed."));
       setCardStep("error");
@@ -444,8 +454,15 @@ export default function Attendance() {
     setCardError("");
     try {
       const ticket = await verifyPasskey();
+      setVerifyFailedOnThisDevice(false);
       executeLocation(mode, ticket, reasonText);
     } catch (err) {
+      // The account can already have a passkey registered on a DIFFERENT
+      // device (passkeyRegistered is account-wide, not per-device), so
+      // verification here can fail simply because THIS device has never
+      // registered one -- offer to register one right from the error
+      // screen instead of leaving the employee stuck with no way forward.
+      setVerifyFailedOnThisDevice(true);
       setCardError(err.message || "Biometric verification failed. Please try again.");
       setCardStep("error");
     }
@@ -536,8 +553,10 @@ export default function Attendance() {
     setCardError("");
     try {
       const ticket = await verifyPasskey();
+      setVerifyFailedOnThisDevice(false);
       executeCheckOutLocation(ticket);
     } catch (err) {
+      setVerifyFailedOnThisDevice(true);
       setCardError(err.message || "Biometric verification failed. Please try again.");
       setCardStep("error");
     }
@@ -862,17 +881,38 @@ export default function Attendance() {
           </h3>
           <p className="in-card-flow-desc">{cardError || "An error occurred during verification."}</p>
 
+          {verifyFailedOnThisDevice && (
+            <p className="in-card-flow-desc" style={{ marginTop: "-8px" }}>
+              This can happen if your account's passkey was registered on a different device.
+              Register one for this device instead.
+            </p>
+          )}
+
           <div className="in-card-actions" style={{ marginTop: "20px" }}>
             <button type="button" className="in-card-btn ghost" onClick={handleCancelFlow}>
               Cancel
             </button>
-            <button
-              type="button"
-              className={`in-card-btn primary ${isGreen ? "green" : ""}`}
-              onClick={handleRetry}
-            >
-              Try Again
-            </button>
+            {verifyFailedOnThisDevice ? (
+              <button
+                type="button"
+                className={`in-card-btn primary ${isGreen ? "green" : ""}`}
+                onClick={() => {
+                  setVerifyFailedOnThisDevice(false);
+                  setCardError("");
+                  setCardStep("passkey-register");
+                }}
+              >
+                Register Passkey for This Device
+              </button>
+            ) : (
+              <button
+                type="button"
+                className={`in-card-btn primary ${isGreen ? "green" : ""}`}
+                onClick={handleRetry}
+              >
+                Try Again
+              </button>
+            )}
           </div>
         </div>
       );
@@ -935,7 +975,14 @@ export default function Attendance() {
                 <span className="att-tile-label">Check-In Time</span>
               </div>
               <div className="att-tile-value">
-                {isCheckedIn ? formatTime(todayAttendance.checkInTime) : "-- : --"}
+                {isCheckedIn ? (
+                  <CheckInTime
+                    time={todayAttendance.checkInTime}
+                    latenessStatus={todayAttendance.latenessStatus}
+                  />
+                ) : (
+                  "-- : --"
+                )}
               </div>
               <span className="att-tile-badge">
                 {isCheckedIn ? "Checked In" : "Not Marked"}

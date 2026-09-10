@@ -18,18 +18,20 @@ import {
   AlertCircle,
   Users,
   Building,
+  Building2,
   Monitor,
-  Search,
   MapPin,
-  MoreHorizontal,
-  ArrowUpDown,
+  X,
 } from "lucide-react";
 import { getMyRecords } from "../../Services/attendanceService";
 import { formatDate, formatTime, formatMinutesAsHours } from "../../Utils/dateUtils";
 import { GOOGLE_MAPS_QUERY_URL } from "../../Utils/constants";
-import StatusBadge from "../../Components/Common/StatusBadge";
 import EmptyState from "../../Components/Common/EmptyState";
+import CheckInTime from "../../Components/Common/CheckInTime";
 import "../../Styles/AttendanceReport.css";
+// Reused so the employee's own attendance table renders with the exact same
+// look as the admin Attendance Logs table (attlog-* classes).
+import "../../Styles/AttendanceManagement.css";
 
 /* ══════════════════════════════════════════════════════════════════════════════
    Mock Data for September 2025
@@ -137,101 +139,136 @@ const MOCK_REPORT_DATA = {
 };
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   Mock Data for Attendance Records (September 2025)
+   Attendance Records tab (below) is backed entirely by GET /attendance/my-records
+   -- see loadTable()/loadStats(). The Attendance model has no "leave" or
+   "half day" concept; the real categories are login type (Office/Distance)
+   and lateness (On Time/Slight Late/Very Late) plus an insufficient-hours flag.
 ══════════════════════════════════════════════════════════════════════════════ */
-const MOCK_RECORDS_METRICS = [
-  { label: "Present", value: 18, color: "green", icon: CheckCircle2 },
-  { label: "Work From Home", value: 3, color: "blue", icon: Home },
-  { label: "Half Day", value: 1, color: "amber", icon: Clock },
-  { label: "Leave", value: 1, color: "red", icon: Calendar },
-  { label: "Absent", value: 0, color: "purple", icon: AlertCircle },
-  { label: "Total Records", value: 22, color: "cyan", icon: ListChecks },
-];
-
-const MOCK_TABLE_RECORDS = [
-  { id: 1, date: "03 Sep 2025", day: "Wed", status: "present", statusLabel: "Present", checkIn: "09:02 AM", checkOut: "06:01 PM", hours: "8h 59m", type: "In Office", typeIcon: "office", location: "Kolkata, Office", remarks: "—" },
-  { id: 2, date: "02 Sep 2025", day: "Tue", status: "remote", statusLabel: "Remote", checkIn: "09:10 AM", checkOut: "06:15 PM", hours: "9h 05m", type: "Work From Home", typeIcon: "home", location: "Kolkata, WB", remarks: "—" },
-  { id: 3, date: "01 Sep 2025", day: "Mon", status: "present", statusLabel: "Present", checkIn: "09:00 AM", checkOut: "06:03 PM", hours: "9h 03m", type: "In Office", typeIcon: "office", location: "Kolkata, Office", remarks: "—" },
-  { id: 4, date: "29 Aug 2025", day: "Fri", status: "leave", statusLabel: "Leave", checkIn: "—", checkOut: "—", hours: "—", type: null, typeIcon: null, location: "—", remarks: "Sick Leave" },
-  { id: 5, date: "28 Aug 2025", day: "Thu", status: "halfday", statusLabel: "Half Day", checkIn: "09:05 AM", checkOut: "01:00 PM", hours: "3h 55m", type: "In Office", typeIcon: "office", location: "Kolkata, Office", remarks: "Personal Work" },
-  { id: 6, date: "27 Aug 2025", day: "Wed", status: "present", statusLabel: "Present", checkIn: "09:01 AM", checkOut: "06:00 PM", hours: "8h 59m", type: "In Office", typeIcon: "office", location: "Kolkata, Office", remarks: "—" },
-  { id: 7, date: "26 Aug 2025", day: "Tue", status: "remote", statusLabel: "Remote", checkIn: "09:15 AM", checkOut: "06:10 PM", hours: "8h 55m", type: "Work From Home", typeIcon: "home", location: "Kolkata, WB", remarks: "—" },
-  { id: 8, date: "25 Aug 2025", day: "Mon", status: "present", statusLabel: "Present", checkIn: "09:00 AM", checkOut: "06:05 PM", hours: "9h 05m", type: "In Office", typeIcon: "office", location: "Kolkata, Office", remarks: "—" },
-  { id: 9, date: "22 Aug 2025", day: "Fri", status: "present", statusLabel: "Present", checkIn: "09:08 AM", checkOut: "06:12 PM", hours: "9h 04m", type: "In Office", typeIcon: "office", location: "Kolkata, Office", remarks: "—" },
-  { id: 10, date: "21 Aug 2025", day: "Thu", status: "present", statusLabel: "Present", checkIn: "09:12 AM", checkOut: "06:00 PM", hours: "8h 48m", type: "In Office", typeIcon: "office", location: "Kolkata, Office", remarks: "—" },
-];
 
 /* ══════════════════════════════════════════════════════════════════════════════
    Main Component: AttendanceRecords (Report Page)
 ══════════════════════════════════════════════════════════════════════════════ */
 export default function AttendanceRecords() {
-  const [activeTab, setActiveTab] = useState("reports"); // "reports" | "records"
+  const [activeTab, setActiveTab] = useState("records"); // "reports" | "records"
 
-  /* Attendance Records Filters & Search */
-  const [filterStatus, setFilterStatus] = useState("ALL");
-  const [filterType, setFilterType] = useState("ALL");
-  const [filterLocation, setFilterLocation] = useState("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [recordsPage, setRecordsPage] = useState(1);
+  /* Attendance Records: no filter UI beyond the month/year picker -- like
+     the admin Attendance Logs table, the card just scrolls internally, so
+     fetch a generously large page in one go. 100 is the backend's hard cap
+     (see myRecordsValidators) -- requesting more 422s the request. */
+  const FETCH_LIMIT = 100;
 
-  /* Filtered Records calculation */
-  const filteredRecords = MOCK_TABLE_RECORDS.filter((rec) => {
-    if (filterStatus !== "ALL" && rec.status.toUpperCase() !== filterStatus) return false;
-    if (filterType !== "ALL") {
-      if (filterType === "OFFICE" && rec.type !== "In Office") return false;
-      if (filterType === "WFH" && rec.type !== "Work From Home") return false;
-    }
-    if (filterLocation !== "ALL" && rec.location !== filterLocation) return false;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const match =
-        rec.date.toLowerCase().includes(q) ||
-        rec.location.toLowerCase().includes(q) ||
-        rec.remarks.toLowerCase().includes(q) ||
-        rec.statusLabel.toLowerCase().includes(q);
-      if (!match) return false;
-    }
-    return true;
-  });
+  // The 12 calendar months, independent of year.
+  const MONTH_NAMES = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+  const MONTH_OPTIONS = MONTH_NAMES.map((label, i) => ({ value: i + 1, label }));
 
-  /* Attendance Records Table State for API fallback */
-  const [filters, setFilters] = useState({ fromDate: "", toDate: "", loginType: "", status: "" });
-  const [page, setPage] = useState(1);
-  const [data, setData] = useState(null);
+  // Current year back to when the app's earliest realistic data could be,
+  // plus the current year -- generous enough for "any year" without an
+  // unbounded/empty-feeling list.
+  const CURRENT_YEAR = new Date().getFullYear();
+  const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_YEAR - i);
+
+  // null/null means "no date filter" -- Clear resets to this and shows
+  // every record on file (up to FETCH_LIMIT).
+  const [selectedMonthNum, setSelectedMonthNum] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
+  const [statusFilter, setStatusFilter] = useState(null); // null | "present" | "absent" | "late" | "ontime"
+  const [data, setData] = useState(null); // { records, total }
+  const [stats, setStats] = useState(null); // category counts for the selected month
+
+  // Either one alone is already a real, active filter (see loadTable) --
+  // requiring both here meant picking just a year (or just a month) left
+  // the Clear button disabled even though it was silently filtering data.
+  const hasDateFilter = selectedMonthNum !== null || selectedYear !== null;
+  const hasAnyFilter = hasDateFilter || statusFilter !== null;
 
   useEffect(() => {
     if (activeTab === "records") {
-      loadRecords();
+      loadTable(selectedYear, selectedMonthNum);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, activeTab]);
+  }, [activeTab, selectedYear, selectedMonthNum]);
 
-  async function loadRecords() {
+  async function loadTable(year, month) {
     setData(null);
-    const params = { page, limit: 10 };
-    if (filters.fromDate) params.fromDate = filters.fromDate;
-    if (filters.toDate) params.toDate = filters.toDate;
-    if (filters.loginType) params.loginType = filters.loginType;
-    if (filters.status) params.status = filters.status;
+    setStats(null);
     try {
+      const params = { page: 1, limit: FETCH_LIMIT };
+      let lastDay = null;
+
+      if (year !== null && month !== null) {
+        // Specific month: e.g. September 2026.
+        const monthValue = `${year}-${String(month).padStart(2, "0")}`;
+        params.fromDate = `${monthValue}-01`;
+        lastDay = new Date(year, month, 0).getDate();
+        params.toDate = `${monthValue}-${String(lastDay).padStart(2, "0")}`;
+      } else if (year !== null) {
+        // A year with "All Months" still has to filter -- picking just a
+        // year used to do nothing at all, since the old code only ever
+        // built a date range when BOTH were set.
+        params.fromDate = `${year}-01-01`;
+        params.toDate = `${year}-12-31`;
+      }
+      // Month with "All Years" (e.g. "every September") can't be expressed
+      // as one contiguous fromDate/toDate range, so it's applied client-side
+      // below instead, on top of whatever the (unfiltered) fetch returns.
+
       const result = await getMyRecords(params);
-      setData(result);
+      let records = result.records;
+      if (year === null && month !== null) {
+        records = records.filter((r) => new Date(r.date).getMonth() + 1 === month);
+      }
+      setData({ ...result, records });
+      const present = records.length;
+
+      // "Present" / "Absent" only mean something against a single month --
+      // there's no leave/holiday calendar in this app, so "days" here means
+      // calendar days (elapsed so far, for the current month), not working days.
+      let daysElapsed;
+      let absent;
+      if (year !== null && month !== null) {
+        const now = new Date();
+        const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
+        daysElapsed = isCurrentMonth ? now.getDate() : lastDay;
+        absent = Math.max(0, daysElapsed - present);
+      }
+
+      setStats({
+        present,
+        daysElapsed,
+        absent,
+        office: records.filter((r) => r.loginType === "OFFICE").length,
+        distance: records.filter((r) => r.loginType === "DISTANCE").length,
+        onTime: records.filter((r) => r.latenessStatus === "ON_TIME").length,
+        late: records.filter((r) => r.latenessStatus !== "ON_TIME").length,
+      });
     } catch {
-      setData({ records: [], pagination: { total: 0, pages: 1 } });
+      setData({ records: [], total: 0 });
+      setStats(null);
     }
   }
 
-  const applyFilters = (e) => {
-    e.preventDefault();
-    setPage(1);
-    loadRecords();
+  const handleClearFilters = () => {
+    setStatusFilter(null);
+    if (hasDateFilter) {
+      setSelectedMonthNum(null);
+      setSelectedYear(null);
+    }
   };
 
-  const resetFilters = () => {
-    setFilters({ fromDate: "", toDate: "", loginType: "", status: "" });
-    setPage(1);
-    setTimeout(loadRecords, 0);
-  };
+  // Status quick-filters apply on top of whatever the month/year filter (or
+  // lack of one) already fetched. "Absent" can never match a real record --
+  // every row here represents a day the employee actually checked in, so an
+  // absence never produces a row in the first place.
+  const visibleRecords = (data?.records || []).filter((r) => {
+    if (!statusFilter || statusFilter === "present") return true;
+    if (statusFilter === "absent") return false;
+    if (statusFilter === "ontime") return r.latenessStatus === "ON_TIME";
+    if (statusFilter === "late") return r.latenessStatus === "SLIGHT_LATE" || r.latenessStatus === "VERY_LATE";
+    return true;
+  });
 
   /* Donut calculations (circumference = 2 * PI * 52 ≈ 326.7) */
   const circumference = 2 * Math.PI * 52;
@@ -246,19 +283,19 @@ export default function AttendanceRecords() {
         <div className="att-report-tabs">
           <button
             type="button"
-            className={`att-tab-btn ${activeTab === "reports" ? "active" : ""}`}
-            onClick={() => setActiveTab("reports")}
-          >
-            <BarChart3 size={16} />
-            <span>Reports</span>
-          </button>
-          <button
-            type="button"
             className={`att-tab-btn ${activeTab === "records" ? "active" : ""}`}
             onClick={() => setActiveTab("records")}
           >
             <ListChecks size={16} />
             <span>Attendance Records</span>
+          </button>
+          <button
+            type="button"
+            className={`att-tab-btn ${activeTab === "reports" ? "active" : ""}`}
+            onClick={() => setActiveTab("reports")}
+          >
+            <BarChart3 size={16} />
+            <span>Reports</span>
           </button>
         </div>
 
@@ -283,15 +320,73 @@ export default function AttendanceRecords() {
             </>
           ) : (
             <>
-              <button type="button" className="att-month-select-btn" title="Select Date Range">
+              {/* Quick status filters -- sit to the left of the date filter,
+                  same line. */}
+              {[
+                { key: "present", label: "Present" },
+                { key: "absent", label: "Absent" },
+                { key: "late", label: "Late" },
+                { key: "ontime", label: "On Time" },
+              ].map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  className={`att-btn ${statusFilter === f.key ? "att-btn-active" : ""}`}
+                  onClick={() => setStatusFilter((prev) => (prev === f.key ? null : f.key))}
+                >
+                  {f.label}
+                </button>
+              ))}
+
+              {/* Month + Year combined into a single button-styled control.
+                  Both selects always render -- "All Months"/"All Years" are
+                  real options in them, not a separate state that hides the
+                  controls, so picking a specific date again after clearing
+                  never requires anything but this same dropdown. */}
+              <div className="att-btn att-month-year-combo" title="Filter by month and year">
                 <Calendar size={16} color="#0074F1" />
-                <span>01 Sep 2025 - 30 Sep 2025</span>
+                <select
+                  className="att-month-select-native"
+                  value={selectedMonthNum ?? ""}
+                  onChange={(e) => setSelectedMonthNum(e.target.value === "" ? null : Number(e.target.value))}
+                >
+                  <option value="">All Months</option>
+                  {MONTH_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="att-month-year-divider" />
+                <select
+                  className="att-month-select-native"
+                  value={selectedYear ?? ""}
+                  onChange={(e) => setSelectedYear(e.target.value === "" ? null : Number(e.target.value))}
+                >
+                  <option value="">All Years</option>
+                  {YEAR_OPTIONS.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
                 <ChevronDown size={14} color="#64748b" />
+              </div>
+
+              <button
+                type="button"
+                className="att-btn"
+                onClick={handleClearFilters}
+                disabled={!hasAnyFilter}
+                title="Clear all filters"
+              >
+                <X size={15} />
+                <span>Clear</span>
               </button>
 
               <button
                 type="button"
-                className="att-export-btn solid-blue"
+                className="att-btn att-btn-solid"
                 onClick={() => window.print()}
                 title="Export"
               >
@@ -778,116 +873,25 @@ export default function AttendanceRecords() {
       {/* ══════════════════════════ TAB 2: ATTENDANCE RECORDS TABLE ══════════════════════════ */}
       {activeTab === "records" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {/* ── Filter Card ── */}
-          <div className="att-records-filter-card">
-            <div className="att-records-filter-form">
-              {/* Date Range */}
-              <div className="att-filter-col">
-                <label className="att-filter-label">Date Range</label>
-                <button
-                  type="button"
-                  className="att-filter-select"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    minWidth: 200,
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <span>01 Sep 2025 - 30 Sep 2025</span>
-                  <ChevronDown size={14} color="#64748b" />
-                </button>
-              </div>
-
-              {/* Status */}
-              <div className="att-filter-col">
-                <label className="att-filter-label">Status</label>
-                <select
-                  className="att-filter-select"
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                >
-                  <option value="ALL">All Status</option>
-                  <option value="PRESENT">Present</option>
-                  <option value="REMOTE">Remote</option>
-                  <option value="LEAVE">Leave</option>
-                  <option value="HALFDAY">Half Day</option>
-                  <option value="ABSENT">Absent</option>
-                </select>
-              </div>
-
-              {/* Attendance Type */}
-              <div className="att-filter-col">
-                <label className="att-filter-label">Attendance Type</label>
-                <select
-                  className="att-filter-select"
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
-                >
-                  <option value="ALL">All Types</option>
-                  <option value="OFFICE">In Office</option>
-                  <option value="WFH">Work From Home</option>
-                </select>
-              </div>
-
-              {/* Location */}
-              <div className="att-filter-col">
-                <label className="att-filter-label">Location</label>
-                <select
-                  className="att-filter-select"
-                  value={filterLocation}
-                  onChange={(e) => setFilterLocation(e.target.value)}
-                >
-                  <option value="ALL">All Locations</option>
-                  <option value="Kolkata, Office">Kolkata, Office</option>
-                  <option value="Kolkata, WB">Kolkata, WB</option>
-                </select>
-              </div>
-
-              {/* Search */}
-              <div className="att-filter-col grow">
-                <label className="att-filter-label">Search</label>
-                <div className="att-search-wrap">
-                  <Search size={16} className="att-search-icon" />
-                  <input
-                    type="text"
-                    className="att-search-input"
-                    placeholder="Search by date, location or remarks..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="att-filter-btn-group">
-                <button
-                  type="button"
-                  className="att-filter-btn reset"
-                  onClick={() => {
-                    setFilterStatus("ALL");
-                    setFilterType("ALL");
-                    setFilterLocation("ALL");
-                    setSearchQuery("");
-                  }}
-                >
-                  Reset
-                </button>
-                <button
-                  type="button"
-                  className="att-filter-btn apply"
-                  onClick={() => {}}
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
-          </div>
-
           {/* ── 6 Colorful KPI Mini Cards ── */}
           <div className="att-records-kpi-grid">
-            {MOCK_RECORDS_METRICS.map((kpi, idx) => {
+            {[
+              {
+                label: "Present",
+                value: stats
+                  ? stats.daysElapsed != null
+                    ? `${stats.present}/${stats.daysElapsed}`
+                    : stats.present
+                  : undefined,
+                color: "cyan",
+                icon: ListChecks,
+              },
+              { label: "In Office", value: stats?.office, color: "green", icon: Building },
+              { label: "Remote", value: stats?.distance, color: "blue", icon: Home },
+              { label: "On Time", value: stats?.onTime, color: "purple", icon: CheckCircle2 },
+              { label: "Late", value: stats?.late, color: "amber", icon: Clock },
+              { label: "Absent", value: stats?.absent, color: "red", icon: AlertCircle },
+            ].map((kpi, idx) => {
               const Icon = kpi.icon;
               return (
                 <div key={idx} className={`att-kpi-card ${kpi.color}`}>
@@ -895,7 +899,7 @@ export default function AttendanceRecords() {
                     <Icon size={18} />
                   </div>
                   <div className="att-kpi-info">
-                    <span className="att-kpi-val">{kpi.value}</span>
+                    <span className="att-kpi-val">{kpi.value ?? "—"}</span>
                     <span className="att-kpi-label">{kpi.label}</span>
                   </div>
                 </div>
@@ -903,128 +907,130 @@ export default function AttendanceRecords() {
             })}
           </div>
 
-          {/* ── Records Data Table Card ── */}
-          <div className="att-records-table-card">
-            <div className="att-records-table-wrap">
-              <table className="att-table-custom">
-                <thead>
-                  <tr>
-                    <th style={{ width: 44, textAlign: "center" }}>#</th>
-                    <th>
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
-                        <span>Date</span>
-                        <ArrowUpDown size={12} color="#94a3b8" />
-                      </div>
-                    </th>
-                    <th>Day</th>
-                    <th>Status</th>
-                    <th>Check-In</th>
-                    <th>Check-Out</th>
-                    <th>Working Hours</th>
-                    <th>Attendance Type</th>
-                    <th>Location</th>
-                    <th>Remarks</th>
-                    <th style={{ textAlign: "center" }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRecords.map((row) => (
-                    <tr key={row.id}>
-                      <td style={{ textAlign: "center", color: "#64748b" }}>{row.id}</td>
-                      <td style={{ fontWeight: 600 }}>{row.date}</td>
-                      <td style={{ color: "#64748b" }}>{row.day}</td>
-                      <td>
-                        <span className={`att-status-badge ${row.status}`}>
-                          <span className="att-status-dot" />
-                          <span>{row.statusLabel}</span>
-                        </span>
-                      </td>
-                      <td>{row.checkIn}</td>
-                      <td>{row.checkOut}</td>
-                      <td style={{ fontWeight: 600 }}>{row.hours}</td>
-                      <td>
-                        {row.type ? (
-                          <div className="att-type-cell">
-                            {row.typeIcon === "office" ? (
-                              <Building size={14} className="att-type-icon" />
-                            ) : (
-                              <Home size={14} className="att-type-icon" />
-                            )}
-                            <span>{row.type}</span>
-                          </div>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td>
-                        {row.location !== "—" ? (
-                          <div className="att-location-cell">
-                            <MapPin size={14} className="att-location-icon" />
-                            <span>{row.location}</span>
-                          </div>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td style={{ color: row.remarks !== "—" ? "#1e293b" : "#94a3b8" }}>
-                        {row.remarks}
-                      </td>
-                      <td style={{ textAlign: "center" }}>
-                        <button type="button" className="att-action-menu-btn" title="Actions">
-                          <MoreHorizontal size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* ── Footer & Pagination ── */}
-            <div className="att-records-footer">
-              <span className="att-records-count-text">
-                Showing 1–{filteredRecords.length} of 22 records
-              </span>
-              <div className="att-records-pagination">
-                <button
-                  type="button"
-                  className="att-page-nav-btn"
-                  disabled={recordsPage <= 1}
-                  onClick={() => setRecordsPage((p) => Math.max(1, p - 1))}
-                >
-                  <ChevronLeft size={14} /> Previous
-                </button>
-                <button
-                  type="button"
-                  className={`att-page-num-btn ${recordsPage === 1 ? "active" : ""}`}
-                  onClick={() => setRecordsPage(1)}
-                >
-                  1
-                </button>
-                <button
-                  type="button"
-                  className={`att-page-num-btn ${recordsPage === 2 ? "active" : ""}`}
-                  onClick={() => setRecordsPage(2)}
-                >
-                  2
-                </button>
-                <button
-                  type="button"
-                  className={`att-page-num-btn ${recordsPage === 3 ? "active" : ""}`}
-                  onClick={() => setRecordsPage(3)}
-                >
-                  3
-                </button>
-                <button
-                  type="button"
-                  className="att-page-nav-btn"
-                  disabled={recordsPage >= 3}
-                  onClick={() => setRecordsPage((p) => Math.min(3, p + 1))}
-                >
-                  Next <ChevronRight size={14} />
-                </button>
+          {/* ── Records Data Table Card (same attlog-* design as the admin
+               Attendance Logs table: fixed-height card, internal scroll,
+               sticky header, colored work-mode/status pill badges) ── */}
+          <div className="attlog-card" style={{ height: "calc(100vh - 420px)" }}>
+            {data === null ? (
+              <div className="attlog-spinner-wrap">
+                <div className="spinner" />
               </div>
-            </div>
+            ) : visibleRecords.length === 0 ? (
+              <EmptyState icon={ListChecks} title="No attendance records found" />
+            ) : (
+              <div className="attlog-table-wrap">
+                <table className="attlog-table">
+                  <thead>
+                    <tr>
+                      <th className="th-num">#</th>
+                      <th>Date</th>
+                      <th className="th-checkin">Check In</th>
+                      <th className="th-location">Check In Location</th>
+                      <th className="th-checkout">Check Out</th>
+                      <th className="th-location">Check Out Location</th>
+                      <th className="th-workmode">Work Mode</th>
+                      <th className="th-timestatus">Time Status</th>
+                      <th className="th-hours">Total Hours</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleRecords.map((row, idx) => {
+                      const isOffice = row.loginType === "OFFICE";
+                      const inProgress = !row.checkOutTime;
+                      const statusLabel = inProgress
+                        ? "In Progress"
+                        : row.latenessStatus === "VERY_LATE"
+                        ? "Very Late"
+                        : row.latenessStatus === "LATE"
+                        ? "Late"
+                        : row.latenessStatus === "SLIGHT_LATE"
+                        ? "Slight Late"
+                        : "On Time";
+                      const statusBadgeClass = inProgress
+                        ? "badge-inprogress"
+                        : row.latenessStatus === "VERY_LATE"
+                        ? "badge-verylate"
+                        : row.latenessStatus === "LATE"
+                        ? "badge-late"
+                        : row.latenessStatus === "SLIGHT_LATE"
+                        ? "badge-slightlate"
+                        : "badge-ontime";
+                      const locTitle = isOffice ? "Office" : row.reason || "Remote";
+
+                      return (
+                        <tr key={row._id}>
+                          <td className="cell-num">{idx + 1}</td>
+                          <td style={{ fontWeight: 600 }}>{formatDate(row.date, { weekday: undefined })}</td>
+                          <td className="cell-time">
+                            <CheckInTime time={row.checkInTime} latenessStatus={row.latenessStatus} />
+                          </td>
+                          <td className="cell-location">
+                            <a
+                              href={GOOGLE_MAPS_QUERY_URL(row.latitude, row.longitude)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="attlog-location-link"
+                              title="View on Google Maps"
+                            >
+                              <MapPin size={15} className="attlog-pin-icon" />
+                              <div className="attlog-loc-details">
+                                <span className="attlog-loc-title">{locTitle}</span>
+                                <span className="attlog-loc-coords">
+                                  {row.latitude != null ? row.latitude.toFixed(4) : "0.0000"},{" "}
+                                  {row.longitude != null ? row.longitude.toFixed(4) : "0.0000"}
+                                </span>
+                              </div>
+                            </a>
+                          </td>
+                          <td className="cell-time">{row.checkOutTime ? formatTime(row.checkOutTime) : "—"}</td>
+                          <td className="cell-location">
+                            {row.checkOutTime ? (
+                              <a
+                                href={GOOGLE_MAPS_QUERY_URL(
+                                  row.checkOutLatitude ?? row.latitude,
+                                  row.checkOutLongitude ?? row.longitude
+                                )}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="attlog-location-link"
+                                title="View on Google Maps"
+                              >
+                                <MapPin size={15} className="attlog-pin-icon" />
+                                <div className="attlog-loc-details">
+                                  <span className="attlog-loc-title">{locTitle}</span>
+                                  <span className="attlog-loc-coords">
+                                    {(row.checkOutLatitude ?? row.latitude ?? 0).toFixed(4)},{" "}
+                                    {(row.checkOutLongitude ?? row.longitude ?? 0).toFixed(4)}
+                                  </span>
+                                </div>
+                              </a>
+                            ) : (
+                              <span className="cell-empty-dash">—</span>
+                            )}
+                          </td>
+                          <td className="cell-badge">
+                            <span
+                              className={`attlog-pill-badge attlog-workmode-badge ${
+                                isOffice ? "badge-office" : "badge-remote"
+                              }`}
+                            >
+                              {isOffice ? <Building2 size={13} /> : <Home size={13} />}
+                              {isOffice ? "Office" : "Remote"}
+                            </span>
+                          </td>
+                          <td className="cell-badge">
+                            <span className={`attlog-pill-badge ${statusBadgeClass}`}>{statusLabel}</span>
+                          </td>
+                          <td className="cell-hours">
+                            {row.checkOutTime ? formatMinutesAsHours(row.totalWorkingMinutes) : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}

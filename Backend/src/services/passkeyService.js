@@ -113,8 +113,18 @@ async function consumeChallenge(employeeId) {
   return currentChallenge;
 }
 
+const MAX_CREDENTIALS_PER_EMPLOYEE = 2;
+
 async function getRegistrationOptions(employee, origin) {
   const existingCredentials = await PasskeyCredential.find({ employeeId: employee._id });
+
+  if (existingCredentials.length >= MAX_CREDENTIALS_PER_EMPLOYEE) {
+    throw new ApiError(
+      409,
+      `You can only register up to ${MAX_CREDENTIALS_PER_EMPLOYEE} passkey devices. Remove one before adding another.`,
+      "PASSKEY_LIMIT_REACHED"
+    );
+  }
 
   const options = await generateRegistrationOptions({
     rpName: env.WEBAUTHN_RP_NAME,

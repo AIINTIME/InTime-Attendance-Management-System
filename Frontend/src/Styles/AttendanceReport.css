@@ -40,7 +40,8 @@
 .att-report-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .att-month-select-btn {
@@ -64,6 +65,37 @@
   background: #f8fafc;
 }
 
+/* Real <select> filter, styled to look like the decorative button it
+   replaces -- transparent, no native arrow, no extra padding. */
+.att-month-select-wrap {
+  position: relative;
+}
+
+/* !important throughout: Style.css's global
+   `input:not([type=checkbox]):not([type=radio]), select, textarea` rule
+   (width:100%, min-height:44px, padding:12px 14px) otherwise wins on every
+   property we don't explicitly override here, since a bare `select` tag
+   selector still applies when nothing here contests that specific
+   property. Left uncontested, width:100% makes each <select> try to fill
+   the whole combo button, so the two selects and the chevron overlap and
+   only the last one in the DOM is actually clickable. */
+.att-month-select-native {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none !important;
+  background: transparent !important;
+  font: inherit;
+  color: #334155 !important;
+  cursor: pointer;
+  outline: none;
+  padding: 0 !important;
+  margin: 0;
+  width: auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  flex: 0 1 auto;
+}
+
 .att-export-btn {
   display: flex;
   align-items: center;
@@ -83,6 +115,90 @@
   background: #e0f2fe;
   border-color: #7dd3fc;
   color: #0369a1;
+}
+
+/* ── Unified button: every filter/action control (month+year, clear,
+   export, quick-status-filters) shares this exact box so they all line up
+   at the same height/size. ── */
+.att-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease;
+}
+
+.att-btn:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.att-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.att-btn-solid {
+  background: #0074f1;
+  color: #ffffff;
+  border-color: #0074f1;
+  box-shadow: 0 2px 8px rgba(0, 116, 241, 0.3);
+}
+
+.att-btn-solid:hover:not(:disabled) {
+  background: #0060c7;
+  border-color: #0060c7;
+  color: #ffffff;
+}
+
+.att-btn-active {
+  background: #0074f1;
+  color: #ffffff;
+  border-color: #0074f1;
+}
+
+.att-btn-active:hover:not(:disabled) {
+  background: #0060c7;
+  border-color: #0060c7;
+  color: #ffffff;
+}
+
+.att-month-year-combo {
+  position: relative;
+}
+
+.att-month-year-combo select {
+  max-width: 108px;
+}
+
+.att-month-year-divider {
+  width: 1px;
+  height: 16px;
+  background: #e2e8f0;
+}
+
+.att-status-filter-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.att-status-filter-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+  margin-right: 2px;
 }
 
 /* ══════════════════════════ TAB SWITCHER & CONTROLS ROW ══════════════════════════ */
@@ -1098,22 +1214,54 @@
 }
 
 .att-filter-select {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
   border-radius: 8px;
   padding: 7px 12px;
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: #1e293b !important;
   cursor: pointer;
   outline: none;
-  height: 38px;
+  height: 38px !important;
+  min-height: 38px !important;
   box-sizing: border-box;
+  color-scheme: light !important;
 }
 
-.att-filter-select:focus {
-  border-color: #0074f1;
-  box-shadow: 0 0 0 2px rgba(0, 116, 241, 0.15);
+.att-records-filter-card input.att-filter-select,
+.att-records-filter-card select.att-filter-select,
+.att-records-filter-card input.att-search-input,
+.att-filter-col input,
+.att-filter-col select {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  color-scheme: light !important;
+}
+
+.att-filter-select:focus,
+.att-records-filter-card input.att-filter-select:focus,
+.att-records-filter-card select.att-filter-select:focus {
+  border-color: #0074f1 !important;
+  box-shadow: 0 0 0 2px rgba(0, 116, 241, 0.15) !important;
+  background: #ffffff !important;
+  color: #1e293b !important;
+}
+
+/* Date picker calendar icon for WebKit */
+.att-records-filter-card input[type="date"]::-webkit-calendar-picker-indicator,
+input.att-filter-select[type="date"]::-webkit-calendar-picker-indicator,
+.att-filter-col input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none !important;
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+.att-records-filter-card input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input.att-filter-select[type="date"]::-webkit-calendar-picker-indicator:hover,
+.att-filter-col input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 .att-search-wrap {
@@ -1126,25 +1274,37 @@
 .att-search-icon {
   position: absolute;
   left: 12px;
-  color: #94a3b8;
+  color: #94a3b8 !important;
   pointer-events: none;
+  z-index: 1;
 }
 
 .att-search-input {
   width: 100%;
-  height: 38px;
-  border: 1px solid #cbd5e1;
+  height: 38px !important;
+  min-height: 38px !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
   border-radius: 8px;
   padding: 8px 12px 8px 36px;
   font-size: 13px;
-  color: #1e293b;
+  color: #1e293b !important;
+  color-scheme: light !important;
   outline: none;
   box-sizing: border-box;
 }
 
-.att-search-input:focus {
-  border-color: #0074f1;
-  box-shadow: 0 0 0 2px rgba(0, 116, 241, 0.15);
+.att-search-input::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1;
+}
+
+.att-search-input:focus,
+.att-records-filter-card input.att-search-input:focus {
+  background: #ffffff !important;
+  border-color: #0074f1 !important;
+  box-shadow: 0 0 0 2px rgba(0, 116, 241, 0.15) !important;
+  color: #1e293b !important;
 }
 
 .att-filter-btn-group {
@@ -1367,6 +1527,13 @@
 }
 
 /* Status Badges */
+.att-status-badge-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
 .att-status-badge {
   display: inline-flex;
   align-items: center;

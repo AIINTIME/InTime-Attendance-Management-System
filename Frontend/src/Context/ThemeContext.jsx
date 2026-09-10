@@ -3,10 +3,15 @@ import { createContext, useContext, useEffect, useState } from "react";
 const ThemeContext = createContext(null);
 const STORAGE_KEY = "intime-theme";
 
+// Light is the app's default regardless of the OS/browser preference --
+// most of the app (admin + employee dashboards) isn't styled for dark mode
+// yet, so only an explicit, previously-saved choice should switch it.
 function getInitialTheme() {
   const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === "light" || stored === "dark") return stored;
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  if (stored === "dark") {
+    localStorage.setItem(STORAGE_KEY, "light");
+  }
+  return "light";
 }
 
 export function ThemeProvider({ children }) {

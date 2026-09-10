@@ -19,13 +19,19 @@ async function getMe(req, res) {
 
 const updateMeValidators = [
   body("name").optional().trim().isLength({ min: 2 }).withMessage("Name is too short."),
+  body("phone").optional().trim(),
+  body("dateOfBirth").optional().isISO8601().toDate().withMessage("Invalid date format."),
+  body("gender").optional().isIn(["Male", "Female", "Other", ""]).withMessage("Invalid gender."),
 ];
 
 async function updateMe(req, res, next) {
   try {
     assertValid(req);
-    const { name } = req.body;
-    if (name) req.employee.name = name;
+    const { name, phone, dateOfBirth, gender } = req.body;
+    if (name !== undefined) req.employee.name = name;
+    if (phone !== undefined) req.employee.phone = phone;
+    if (dateOfBirth !== undefined) req.employee.dateOfBirth = dateOfBirth;
+    if (gender !== undefined) req.employee.gender = gender;
     await req.employee.save();
     res.json({ success: true, message: "Profile updated", data: { user: toPublicEmployee(req.employee) } });
   } catch (err) {

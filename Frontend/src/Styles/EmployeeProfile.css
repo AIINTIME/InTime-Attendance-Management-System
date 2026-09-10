@@ -1,0 +1,848 @@
+/* ══════════════════════════════════════════════════════════════════
+   EMPLOYEE PROFILE STYLES (MATCHING MOCKUP DESIGN)
+   ══════════════════════════════════════════════════════════════════ */
+
+.emp-profile-container {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+  box-sizing: border-box;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   1. Header & Breadcrumb
+────────────────────────────────────────────────────────────────── */
+.emp-profile-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  gap: 16px;
+}
+
+.emp-profile-title-wrap h1 {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 5px 0;
+  letter-spacing: -0.4px;
+}
+
+.emp-profile-title-wrap p {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0;
+  font-weight: 450;
+}
+
+.emp-profile-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  padding-top: 4px;
+}
+
+.emp-profile-breadcrumb span.sep {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.emp-profile-breadcrumb strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   2. Main Two-Column Grid Layout
+────────────────────────────────────────────────────────────────── */
+.emp-profile-grid {
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 22px;
+  align-items: flex-start;
+}
+
+/* Base Card Style */
+.emp-card {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  padding: 24px;
+  box-sizing: border-box;
+  position: relative;
+  transition: box-shadow 0.2s ease;
+}
+
+.emp-card:hover {
+  box-shadow: 0 8px 30px -4px rgba(15, 23, 42, 0.07);
+}
+
+/* Card Header Row */
+.emp-card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.emp-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.emp-card-header-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #e0f2fe;
+  color: #0074F1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.emp-card-header-icon.purple {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.emp-card-header-icon.dark {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.emp-card-titles {
+  min-width: 0;
+}
+
+.emp-card-titles h3 {
+  font-size: 16.5px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.emp-card-titles p {
+  font-size: 12px;
+  color: #64748b;
+  margin: 3px 0 0 0;
+  line-height: 1.35;
+}
+
+/* Outline Action Buttons (Edit, Register New Device, Reset Password) */
+.emp-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 9px;
+  border: 1.5px solid #0074F1;
+  background: #ffffff;
+  color: #0074F1;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.emp-btn-outline:hover {
+  background: #0074F1;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 116, 241, 0.22);
+}
+
+.emp-btn-outline:active {
+  transform: translateY(1px);
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   3. Left Column: Profile Information
+────────────────────────────────────────────────────────────────── */
+.emp-profile-avatar-sec {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.emp-avatar-frame {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  margin-bottom: 12px;
+}
+
+.emp-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #ffffff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.emp-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0074F1, #3b82f6);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+  font-weight: 800;
+  border: 4px solid #ffffff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  letter-spacing: -1px;
+}
+
+.emp-camera-trigger {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #0074F1;
+  color: #ffffff;
+  border: 3px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 116, 241, 0.4);
+  transition: all 0.2s ease;
+}
+
+.emp-camera-trigger:hover {
+  background: #0063d1;
+  transform: scale(1.08);
+}
+
+.emp-camera-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.emp-profile-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 7px 0;
+  letter-spacing: -0.3px;
+}
+
+.emp-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #ecfdf5;
+  color: #059669;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.emp-status-pill.inactive {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.emp-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.emp-status-pill.inactive .emp-status-dot {
+  background: #ef4444;
+}
+
+/* Profile Details List */
+.emp-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.emp-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+  gap: 12px;
+}
+
+.emp-detail-row:hover {
+  background: #f8fafc;
+}
+
+.emp-detail-label-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.emp-detail-label-group svg {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.emp-detail-val {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0f172a;
+  text-align: right;
+  word-break: break-all;
+}
+
+/* Gender Dropdown Trigger */
+.emp-gender-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.emp-gender-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 5px 28px 5px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.emp-gender-select:hover {
+  border-color: #cbd5e1;
+}
+
+.emp-gender-select:focus {
+  border-color: #0074F1;
+  box-shadow: 0 0 0 3px rgba(0, 116, 241, 0.12);
+}
+
+.emp-gender-chevron {
+  position: absolute;
+  right: 8px;
+  pointer-events: none;
+  color: #64748b;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   4. Right Column: Registered Passkey Devices & Account Password
+────────────────────────────────────────────────────────────────── */
+.emp-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+/* Devices Table */
+.emp-devices-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 6px;
+}
+
+.emp-devices-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.emp-devices-table th {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.emp-devices-table th:last-child {
+  text-align: center;
+}
+
+.emp-devices-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid #f8fafc;
+  vertical-align: middle;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.emp-devices-table tbody tr:hover {
+  background: #fbfcfe;
+}
+
+.emp-device-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.emp-device-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: #eff6ff;
+  color: #0074F1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.emp-device-name-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.emp-device-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.emp-device-meta {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+/* Device Type Badges */
+.emp-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.emp-type-badge.passkey {
+  background: #eff6ff;
+  color: #0284c7;
+}
+
+.emp-type-badge.biometric {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+/* Status Pill in Table */
+.emp-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: #ecfdf5;
+  color: #059669;
+}
+
+/* Action More Button */
+.emp-action-menu-wrap {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.emp-more-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.emp-more-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+/* Direct delete icon button in the passkey devices table */
+.emp-action-delete-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #ef4444;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.emp-action-delete-btn:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.emp-action-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  border: 1px solid #e2e8f0;
+  padding: 5px;
+  z-index: 50;
+  min-width: 140px;
+  animation: empDropIn 0.15s ease-out;
+}
+
+@keyframes empDropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.emp-action-delete-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #dc2626;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.emp-action-delete-item:hover {
+  background: #fef2f2;
+}
+
+/* Empty State for Devices */
+.emp-devices-empty {
+  text-align: center;
+  padding: 24px 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+  margin-top: 12px;
+}
+
+.emp-devices-empty p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 12px 0;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   5. Account Password Card
+────────────────────────────────────────────────────────────────── */
+.emp-pw-tips-box {
+  background: #f0f7ff;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.emp-pw-tips-icon {
+  color: #0074F1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.emp-pw-tips-content {
+  flex: 1;
+}
+
+.emp-pw-tips-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+}
+
+.emp-pw-tips-list {
+  padding-left: 18px;
+  margin: 0;
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.7;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   6. Modals (Edit Profile & Change Password)
+────────────────────────────────────────────────────────────────── */
+.emp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2100;
+  padding: 16px;
+  box-sizing: border-box;
+  animation: empModalFadeIn 0.2s ease-out;
+}
+
+@keyframes empModalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.emp-modal-card {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 24px 50px -12px rgba(15, 23, 42, 0.25);
+  position: relative;
+  overflow: hidden;
+  padding: 24px 22px;
+  box-sizing: border-box;
+  animation: empModalScaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes empModalScaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.emp-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.emp-modal-header h3 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.emp-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.emp-modal-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.emp-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.emp-form-group label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.emp-form-input {
+  width: 100%;
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  padding: 0 12px;
+  font-size: 13.5px;
+  color: #0f172a;
+  box-sizing: border-box;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.emp-form-input:focus {
+  border-color: #0074F1;
+  box-shadow: 0 0 0 3px rgba(0, 116, 241, 0.12);
+}
+
+.emp-input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.emp-input-with-icon input {
+  padding-right: 38px;
+}
+
+.emp-input-eye-btn {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emp-form-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.emp-btn-cancel {
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.emp-btn-cancel:hover {
+  background: #f8fafc;
+}
+
+.emp-btn-submit {
+  height: 42px;
+  border-radius: 10px;
+  border: none;
+  background: #0074F1;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 116, 241, 0.25);
+  transition: all 0.15s ease;
+}
+
+.emp-btn-submit:hover {
+  background: #0063d1;
+}
+
+.emp-btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   7. Responsive Breakpoints
+────────────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .emp-profile-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .emp-profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .emp-card {
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .emp-profile-title-wrap h1 {
+    font-size: 22px;
+  }
+
+  .emp-card-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .emp-btn-outline {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .emp-form-actions {
+    grid-template-columns: 1fr;
+  }
+}

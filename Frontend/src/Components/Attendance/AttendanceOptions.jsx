@@ -6,6 +6,7 @@ import { getTodayAttendance } from "../../Services/attendanceService";
 import { OFFICE_LOCATION } from "../../Utils/constants";
 import { formatTime, formatMinutesAsHours } from "../../Utils/dateUtils";
 import StatusBadge from "../Common/StatusBadge";
+import CheckInTime from "../Common/CheckInTime";
 import PasskeyRegistrationPrompt from "./PasskeyRegistrationPrompt";
 import AttendanceFlowModal from "./AttendanceFlowModal";
 import CheckOutFlowModal from "./CheckOutFlowModal";
@@ -95,14 +96,17 @@ export default function AttendanceOptions({ onAttendanceRegistered }) {
               />{" "}
               today
             </strong>
-            <div className="muted">
-              Checked in at {formatTime(todayAttendance.checkInTime)} ·{" "}
-              {todayAttendance.loginType === "OFFICE" ? "Office Login" : "Remote Login"}
+            <div className="muted" style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
+              <span>Checked in at</span>
+              <CheckInTime
+                time={todayAttendance.checkInTime}
+                latenessStatus={todayAttendance.latenessStatus}
+              />
+              <span>· {todayAttendance.loginType === "OFFICE" ? "Office Login" : "Remote Login"}</span>
               {todayAttendance.checkOutTime && (
                 <>
-                  {" "}
-                  · Checked out at {formatTime(todayAttendance.checkOutTime)} ·{" "}
-                  {formatMinutesAsHours(todayAttendance.totalWorkingMinutes)} worked
+                  <span>· Checked out at {formatTime(todayAttendance.checkOutTime)}</span>
+                  <span>· {formatMinutesAsHours(todayAttendance.totalWorkingMinutes)} worked</span>
                 </>
               )}
             </div>

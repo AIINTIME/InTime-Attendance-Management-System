@@ -5,6 +5,7 @@ import { getEmployeeById, getEmployeeAttendanceHistory } from "../../Services/ad
 import { formatDate, formatTime, formatMinutesAsHours } from "../../Utils/dateUtils";
 import { GOOGLE_MAPS_QUERY_URL, API_URL } from "../../Utils/constants";
 import StatusBadge from "../../Components/Common/StatusBadge";
+import CheckInTime from "../../Components/Common/CheckInTime";
 import EmptyState from "../../Components/Common/EmptyState";
 import { ListChecks } from "lucide-react";
 
@@ -146,7 +147,9 @@ export default function EmployeeDetails() {
                   {history.records.map((r) => (
                     <tr key={r._id}>
                       <td>{formatDate(r.date)}</td>
-                      <td>{formatTime(r.checkInTime)}</td>
+                      <td>
+                        <CheckInTime time={r.checkInTime} latenessStatus={r.latenessStatus} />
+                      </td>
                       <td>{r.loginType === "OFFICE" ? "Office" : "Distance"}</td>
                       <td>{formatMinutesAsHours(r.totalWorkingMinutes)}</td>
                       <td>

@@ -1,0 +1,472 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   InTime Admin - Employees Management Styles
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.emp-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  padding-bottom: 24px;
+}
+
+/* Page Header */
+.emp-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.emp-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.emp-title-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.emp-page-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.emp-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: #EBF5FF;
+  color: #0074F1;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.emp-page-subtitle {
+  font-size: 13.5px;
+  color: #64748B;
+  margin: 2px 0 0 0;
+  font-weight: 400;
+}
+
+.emp-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #0066F6;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 102, 246, 0.25);
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.emp-add-btn:hover {
+  background: #0056D2;
+}
+
+.emp-add-btn:active {
+  transform: scale(0.98);
+}
+
+/* Card Container */
+.emp-card {
+  background: #FFFFFF;
+  border: 1px solid #EDF2F7;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Table Wrapper (Scrollable with height fitting 10 employees) */
+.emp-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 672px;
+}
+
+.emp-table-wrap::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.emp-table-wrap::-webkit-scrollbar-track {
+  background: #F8FAFC;
+  border-radius: 4px;
+}
+
+.emp-table-wrap::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+.emp-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+.emp-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+  font-size: 13px;
+}
+
+.emp-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #F4F7FB;
+  color: #334155;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 14px 16px;
+  border-bottom: 1px solid #EEF2F6;
+  box-shadow: 0 1px 0 #EEF2F6;
+  white-space: nowrap;
+}
+
+.emp-table tbody td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #F1F5F9;
+  vertical-align: middle;
+  color: #334155;
+}
+
+.emp-table tbody tr:hover td {
+  background: #F8FAFC;
+}
+
+/* Table Cells Specifics */
+.emp-index-cell {
+  color: #0F172A;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.emp-profile-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 170px;
+}
+
+.emp-avatar-img {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.emp-avatar-initials {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.emp-name-text {
+  font-weight: 700;
+  color: #0F172A;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+
+.emp-id-text {
+  color: #475569;
+  font-weight: 500;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.emp-dept-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.emp-email-text {
+  color: #475569;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.emp-phone-text {
+  color: #475569;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Actions Column */
+.emp-actions-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.emp-action-btn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  background: #FFFFFF;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  font-family: inherit;
+}
+
+.emp-action-btn.edit {
+  border-color: #BFDBFE;
+  color: #0074F1;
+  background: #FFFFFF;
+}
+
+.emp-action-btn.edit:hover {
+  background: #EFF6FF;
+  border-color: #93C5FD;
+}
+
+.emp-action-btn.reset-pwd {
+  border-color: #FED7AA;
+  color: #EA580C;
+  background: #FFFFFF;
+}
+
+.emp-action-btn.reset-pwd:hover {
+  background: #FFF7ED;
+  border-color: #FDBA74;
+}
+
+.emp-action-btn.delete {
+  border-color: #FECACA;
+  color: #EF4444;
+  background: #FFFFFF;
+}
+
+.emp-action-btn.delete:hover {
+  background: #FEF2F2;
+  border-color: #FCA5A5;
+}
+
+/* Modal Styling */
+.emp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: empFadeIn 0.15s ease-out;
+}
+
+.emp-modal-card {
+  background: #FFFFFF;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 540px;
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.15);
+  overflow: hidden;
+  animation: empSlideUp 0.2s ease-out;
+}
+
+@keyframes empFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes empSlideUp {
+  from { transform: translateY(12px) scale(0.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.emp-modal-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid #EEF2F6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.emp-modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0;
+}
+
+.emp-modal-close {
+  background: none;
+  border: none;
+  color: #94A3B8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.emp-modal-close:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+
+.emp-modal-form {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.emp-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.emp-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.emp-form-group.full {
+  grid-column: span 2;
+}
+
+.emp-form-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+}
+
+/* !important here defends against Style.css's legacy
+   `input:not([type="checkbox"]):not([type="radio"])` rule, whose two
+   :not() clauses give it higher specificity than a plain class selector
+   and which paints inputs with dark-theme CSS variables. */
+.emp-form-input,
+.emp-form-select {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #0F172A !important;
+  background: #FFFFFF !important;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.emp-form-input:focus,
+.emp-form-select:focus {
+  border-color: #0074F1 !important;
+  box-shadow: 0 0 0 3px rgba(0, 116, 241, 0.1) !important;
+}
+
+.emp-form-input::placeholder {
+  color: #94A3B8;
+}
+
+.emp-form-input:disabled {
+  background: #F8FAFC !important;
+  color: #94A3B8 !important;
+  cursor: not-allowed;
+}
+
+.emp-modal-footer {
+  padding: 16px 24px;
+  background: #F8FAFC;
+  border-top: 1px solid #EEF2F6;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.emp-btn-cancel {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.emp-btn-cancel:hover {
+  background: #F1F5F9;
+  color: #1E293B;
+}
+
+.emp-btn-submit {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  background: #0074F1;
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.emp-btn-submit:hover {
+  background: #0060C9;
+}
+
+.emp-btn-danger {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  background: #EF4444;
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.emp-btn-danger:hover {
+  background: #DC2626;
+}

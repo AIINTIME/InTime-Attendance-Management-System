@@ -21,6 +21,9 @@ const employeeSchema = new mongoose.Schema(
     department: { type: String, required: true, trim: true },
     designation: { type: String, required: true, trim: true },
     profilePhoto: { type: String, default: "" },
+    phone: { type: String, default: "" },
+    dateOfBirth: { type: Date, default: null },
+    gender: { type: String, default: "", enum: ["Male", "Female", "Other", ""] },
 
     passkeyRegistered: { type: Boolean, default: false },
     mustChangePassword: { type: Boolean, default: false },

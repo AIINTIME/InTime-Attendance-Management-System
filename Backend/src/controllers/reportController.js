@@ -44,8 +44,10 @@ async function exportExcel(req, res, next) {
   try {
     assertValid(req);
     const filters = filtersFromQuery(req);
+    const period = reportService.resolvePeriod(filters);
+    Object.assign(filters, period);
     const { records } = await attendanceService.findAttendanceRecords(filters);
-    const buffer = await reportService.generateExcelBuffer(records);
+    const buffer = await reportService.generateExcelBuffer(records, period);
 
     res.setHeader(
       "Content-Type",
@@ -62,8 +64,10 @@ async function exportPdf(req, res, next) {
   try {
     assertValid(req);
     const filters = filtersFromQuery(req);
+    const period = reportService.resolvePeriod(filters);
+    Object.assign(filters, period);
     const { records } = await attendanceService.findAttendanceRecords(filters);
-    const buffer = await reportService.generatePdfBuffer(records);
+    const buffer = await reportService.generatePdfBuffer(records, period);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="attendance-report.pdf"`);

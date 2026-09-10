@@ -1,6 +1,6 @@
-const env = require("../config/env");
 const { haversineDistanceMeters } = require("../utils/geoDistance");
 const { ApiError } = require("../middleware/errorMiddleware");
+const settingsService = require("./settingsService");
 
 function assertValidCoordinates(latitude, longitude) {
   if (
@@ -18,19 +18,22 @@ function assertValidCoordinates(latitude, longitude) {
 
 /**
  * Backend is authoritative for the office geofence (spec section 25).
- * Returns the computed distance in meters; throws if outside the radius.
+ * Office coordinates/radius come from the admin-editable OrgSettings
+ * (Settings page) rather than fixed .env values. Returns the computed
+ * distance in meters; throws if outside the radius.
  */
-function verifyWithinOfficeRadius(latitude, longitude) {
+async function verifyWithinOfficeRadius(latitude, longitude) {
   assertValidCoordinates(latitude, longitude);
 
+  const settings = await settingsService.getSettings();
   const distanceMeters = haversineDistanceMeters(
     latitude,
     longitude,
-    env.OFFICE_LATITUDE,
-    env.OFFICE_LONGITUDE
+    settings.officeLatitude,
+    settings.officeLongitude
   );
 
-  if (distanceMeters > env.OFFICE_RADIUS_METERS) {
+  if (distanceMeters > settings.officeRadiusMeters) {
     const err = new ApiError(
       422,
       "You are outside the office attendance area. Please move closer to the office and try again.",

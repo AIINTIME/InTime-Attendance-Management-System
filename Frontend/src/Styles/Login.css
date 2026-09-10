@@ -254,14 +254,18 @@
   pointer-events: none;
 }
 
+/* !important defends against Style.css's global
+   `input:not([type="checkbox"]):not([type="radio"])` rule, whose two
+   :not() clauses outrank a plain class selector -- without it, that rule's
+   14px left padding wins and the icon sits on top of the placeholder text. */
 .input-field {
   width: 100%;
   height: 48px;
-  padding: 0 16px 0 46px;
-  background-color: var(--input-bg);
-  border: 1px solid var(--input-border);
+  padding: 0 16px 0 46px !important;
+  background-color: var(--input-bg) !important;
+  border: 1px solid var(--input-border) !important;
   border-radius: var(--radius-md);
-  color: var(--input-text);
+  color: var(--input-text) !important;
   font-size: 14px;
   outline: none;
   transition: all 0.2s ease;
@@ -269,7 +273,7 @@
 }
 
 .input-field.has-eye {
-  padding-right: 46px;
+  padding-right: 46px !important;
 }
 
 .input-field::placeholder {
@@ -278,8 +282,8 @@
 }
 
 .input-field:focus {
-  border-color: var(--input-border-focus);
-  box-shadow: 0 0 0 3px var(--primary-blue-glow);
+  border-color: var(--input-border-focus) !important;
+  box-shadow: 0 0 0 3px var(--primary-blue-glow) !important;
 }
 
 .input-toggle-pwd {

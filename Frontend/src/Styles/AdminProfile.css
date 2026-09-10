@@ -1,0 +1,789 @@
+/* ==========================================================================
+   InTime – Admin Profile Page Styles
+   Pixel-perfect design matching the Admin Profile Mockup
+   ========================================================================== */
+
+.admin-profile-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #0F172A;
+}
+
+/* ══════════════════════════ 1. HEADER ROW & BREADCRUMB ══════════════════════════ */
+.admin-profile-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-profile-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-profile-main-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.admin-profile-main-subtitle {
+  font-size: 13.5px;
+  color: #64748B;
+  margin: 0;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.admin-profile-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748B;
+  font-weight: 500;
+  padding-top: 6px;
+}
+
+.admin-profile-breadcrumb-sep {
+  color: #94A3B8;
+  font-size: 12px;
+}
+
+.admin-profile-breadcrumb-current {
+  color: #0F172A;
+  font-weight: 600;
+}
+
+/* ══════════════════════════ 2. TOP CARD: PERSONAL INFO ══════════════════════════ */
+.admin-profile-card {
+  background: #FFFFFF;
+  border: 1px solid #EEF2F6;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  overflow: hidden;
+}
+
+/* ── Left Column: Avatar & Overview ── */
+.admin-profile-left-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  padding-bottom: 28px;
+  border-right: 1px solid #F1F5F9;
+}
+
+/* Wave Banner Background */
+.admin-profile-wave-banner {
+  width: 100%;
+  height: 125px;
+  background: linear-gradient(135deg, #EBF3FD 0%, #F5F9FE 60%, #E2EDFA 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-profile-wave-svg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 65px;
+}
+
+/* Avatar Wrapper */
+.admin-profile-avatar-wrap {
+  position: relative;
+  margin-top: -52px;
+  width: 98px;
+  height: 98px;
+  z-index: 2;
+}
+
+.admin-profile-avatar-img,
+.admin-profile-avatar-circle {
+  width: 98px;
+  height: 98px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid #FFFFFF;
+  box-shadow: 0 4px 12px rgba(0, 82, 204, 0.15);
+}
+
+.admin-profile-avatar-circle {
+  background: #0052CC;
+  color: #FFFFFF;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Camera button on bottom right of avatar */
+.admin-profile-camera-btn {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #0074F1;
+  color: #FFFFFF;
+  border: 2.5px solid #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 116, 241, 0.35);
+  transition: all 0.18s ease;
+  padding: 0;
+}
+
+.admin-profile-camera-btn:hover:not(:disabled) {
+  background: #0056B3;
+  transform: scale(1.08);
+}
+
+.admin-profile-camera-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Admin Details in Left Column */
+.admin-profile-left-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 14px;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.admin-profile-meta-name {
+  font-size: 19px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.admin-profile-meta-role {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #64748B;
+  margin: 5px 0 14px 0;
+}
+
+/* Active Status Pill */
+.admin-profile-active-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 14px;
+  background: #E6F9EE;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #12A150;
+  letter-spacing: 0.01em;
+}
+
+.admin-profile-active-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10B981;
+}
+
+/* ── Right Column: Personal Information Form / Rows ── */
+.admin-profile-right-col {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Section Header Row */
+.admin-profile-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.admin-profile-section-title-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.admin-profile-section-icon {
+  color: #0074F1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.admin-profile-section-text h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 3px 0;
+}
+
+.admin-profile-section-text p {
+  font-size: 13px;
+  color: #64748B;
+  margin: 0;
+}
+
+/* Edit Button matching screenshot */
+.admin-profile-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid #DCE6F2;
+  background: #FFFFFF;
+  color: #0074F1;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.admin-profile-edit-btn:hover {
+  background: #F0F7FF;
+  border-color: #0074F1;
+}
+
+.admin-profile-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-profile-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #64748B;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.admin-profile-cancel-btn:hover {
+  background: #F8FAFC;
+  color: #0F172A;
+}
+
+.admin-profile-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid #0074F1;
+  background: #0074F1;
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.admin-profile-save-btn:hover:not(:disabled) {
+  background: #0060C7;
+}
+
+.admin-profile-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── 3 Rounded Pill Info Rows ── */
+.admin-profile-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-profile-info-row {
+  display: flex;
+  align-items: center;
+  background: #F8FAFC;
+  border-radius: 10px;
+  padding: 0 18px;
+  height: 48px;
+  box-sizing: border-box;
+  transition: background 0.15s ease;
+}
+
+.admin-profile-info-row:hover {
+  background: #F1F5F9;
+}
+
+.admin-profile-info-label-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 170px;
+  flex-shrink: 0;
+  color: #475569;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.admin-profile-info-icon {
+  color: #64748B;
+  flex-shrink: 0;
+}
+
+.admin-profile-info-value {
+  color: #0F172A;
+  font-size: 13.5px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.admin-profile-inline-input {
+  flex: 1;
+  height: 34px;
+  padding: 0 10px !important;
+  border: 1px solid #CBD5E1 !important;
+  border-radius: 6px !important;
+  font-size: 13.5px !important;
+  color: #0F172A !important;
+  background: #FFFFFF !important;
+  outline: none;
+}
+
+.admin-profile-inline-input:focus {
+  border-color: #0074F1 !important;
+  box-shadow: 0 0 0 2px rgba(0, 116, 241, 0.15) !important;
+}
+
+/* ══════════════════════════ 3. BOTTOM CARD: CHANGE PASSWORD ══════════════════════════ */
+.admin-password-card {
+  background: #FFFFFF;
+  border: 1px solid #EEF2F6;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-password-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-password-header-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #EFF6FF;
+  border: 1px solid #DBEAFE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0074F1;
+  flex-shrink: 0;
+}
+
+.admin-password-header-text h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 3px 0;
+}
+
+.admin-password-header-text p {
+  font-size: 13px;
+  color: #64748B;
+  margin: 0;
+}
+
+/* Password Form Fields */
+.admin-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.admin-password-row-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.admin-password-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.admin-password-field label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+/* Styled Input with Left Lock Icon & Right Eye Icon */
+.admin-password-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.admin-password-lock-icon {
+  position: absolute;
+  left: 14px;
+  color: #94A3B8;
+  pointer-events: none;
+}
+
+.admin-password-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 42px 0 42px !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 10px !important;
+  font-size: 13.5px !important;
+  color: #0F172A !important;
+  background: #FFFFFF !important;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.18s ease;
+}
+
+.admin-password-input::placeholder {
+  color: #94A3B8;
+  font-size: 13px;
+}
+
+.admin-password-input:focus {
+  border-color: #0074F1 !important;
+  box-shadow: 0 0 0 3px rgba(0, 116, 241, 0.1) !important;
+}
+
+.admin-password-eye-btn {
+  position: absolute;
+  right: 12px;
+  border: none;
+  background: transparent;
+  color: #94A3B8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+
+.admin-password-eye-btn:hover {
+  color: #0F172A;
+}
+
+/* Error Banner */
+.admin-password-error-banner {
+  padding: 10px 14px;
+  background: #FEE2E2;
+  border: 1px solid #FCA5A5;
+  border-radius: 8px;
+  color: #B91C1C;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Bottom Area: Requirements Box (Left) & Submit Button (Right) */
+.admin-password-bottom-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+/* Password Requirements Box */
+.admin-password-requirements-box {
+  background: #F0F7FF;
+  border-radius: 12px;
+  padding: 16px 20px;
+  max-width: 480px;
+  flex: 1;
+}
+
+.admin-password-req-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+  margin-bottom: 8px;
+}
+
+.admin-password-req-icon {
+  color: #0074F1;
+}
+
+.admin-password-req-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-password-req-list li {
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.5;
+  position: relative;
+  padding-left: 14px;
+}
+
+.admin-password-req-list li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #64748B;
+  font-weight: bold;
+}
+
+/* Change Password Action Button */
+.admin-password-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 24px;
+  border-radius: 10px;
+  border: none;
+  background: #0074F1;
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 6px rgba(0, 116, 241, 0.28);
+  white-space: nowrap;
+}
+
+.admin-password-submit-btn:hover:not(:disabled) {
+  background: #0060C7;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 116, 241, 0.35);
+}
+
+.admin-password-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ══════════════════════════ 4. PROFILE IMAGE EDIT CONTROLS ══════════════════════════ */
+.admin-profile-avatar-wrap.editing .admin-profile-avatar-img,
+.admin-profile-avatar-wrap.editing .admin-profile-avatar-circle {
+  border-color: #0074F1;
+  box-shadow: 0 0 0 3px rgba(0, 116, 241, 0.25), 0 4px 12px rgba(0, 82, 204, 0.15);
+}
+
+.admin-profile-avatar-edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-profile-photo-change-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #DCE6F2;
+  background: #FFFFFF;
+  color: #0074F1;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.admin-profile-photo-change-btn:hover:not(:disabled) {
+  background: #EFF6FF;
+  border-color: #0074F1;
+}
+
+.admin-profile-photo-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #FEE2E2;
+  background: #FFF5F5;
+  color: #DC2626;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.admin-profile-photo-remove-btn:hover:not(:disabled) {
+  background: #FEE2E2;
+}
+
+/* Row 5: Profile Image row */
+.admin-profile-photo-row {
+  height: auto;
+  min-height: 48px;
+  padding: 8px 18px;
+}
+
+.admin-profile-photo-row-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-profile-photo-thumb-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-profile-photo-thumb-img,
+.admin-profile-photo-thumb-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1.5px solid #E2E8F0;
+}
+
+.admin-profile-photo-thumb-circle {
+  background: #0052CC;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-profile-photo-status-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+}
+
+.admin-profile-photo-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-profile-inline-photo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #DCE6F2;
+  background: #FFFFFF;
+  color: #0074F1;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.admin-profile-inline-photo-btn:hover:not(:disabled) {
+  background: #EFF6FF;
+  border-color: #0074F1;
+}
+
+.admin-profile-inline-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #FEE2E2;
+  background: #FFF5F5;
+  color: #DC2626;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.admin-profile-inline-remove-btn:hover:not(:disabled) {
+  background: #FEE2E2;
+}
+
+/* ══════════════════════════ RESPONSIVE BREAKPOINTS ══════════════════════════ */
+@media (max-width: 860px) {
+  .admin-profile-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-profile-left-col {
+    border-right: none;
+    border-bottom: 1px solid #F1F5F9;
+  }
+
+  .admin-password-row-two-col {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .admin-password-bottom-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-password-submit-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

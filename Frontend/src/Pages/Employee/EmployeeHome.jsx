@@ -204,7 +204,7 @@ export default function EmployeeHome() {
     };
   }, []);
 
-  /* Check-in lateness badge computation */
+  /* Check-in lateness badge computation aligned with Organization Late Status Criteria */
   const latenessInfo = useMemo(() => {
     if (!todayAttendance?.latenessStatus) {
       return { label: "On Time", color: "green" };
@@ -213,7 +213,10 @@ export default function EmployeeHome() {
       return { label: "On Time", color: "green" };
     }
     if (todayAttendance.latenessStatus === "SLIGHT_LATE") {
-      return { label: "Slightly Late", color: "yellow" };
+      return { label: "Slight Late", color: "blue" };
+    }
+    if (todayAttendance.latenessStatus === "LATE") {
+      return { label: "Late", color: "orange" };
     }
     return { label: "Very Late", color: "red" };
   }, [todayAttendance]);
@@ -301,10 +304,15 @@ export default function EmployeeHome() {
           </div>
           <div className="metric-info">
             <span className="metric-label">Check-In</span>
-            <span className="metric-value">
-              {todayAttendance?.checkInTime
-                ? formatTimeAmPm(todayAttendance.checkInTime)
-                : "-- : --"}
+            <span className="metric-value" style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+              {todayAttendance?.checkInTime ? (
+                <>
+                  <span className={`checkin-status-dot dot-${latenessInfo.color}`} />
+                  <span>{formatTimeAmPm(todayAttendance.checkInTime)}</span>
+                </>
+              ) : (
+                "-- : --"
+              )}
             </span>
             <div className="metric-status-row">
               {todayAttendance?.checkInTime ? (

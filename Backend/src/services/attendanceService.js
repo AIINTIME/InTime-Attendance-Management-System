@@ -2,33 +2,38 @@ const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
 const { ApiError } = require("../middleware/errorMiddleware");
 const { verifyWithinOfficeRadius, assertValidCoordinates } = require("./locationService");
+const settingsService = require("./settingsService");
 const { haversineDistanceMeters } = require("../utils/geoDistance");
 const {
   calculateLatenessStatus,
   calculateWorkingMinutes,
   isInsufficientHours,
+  applyLoginBuffer,
 } = require("../utils/attendanceStatus");
 const { getWorkingDateKey } = require("../utils/timezone");
 
 /**
  * Registers OFFICE attendance. Backend is authoritative for the office
  * geofence, the timestamp, and the lateness status (spec sections 25, 62).
+ * The admin-configured login buffer (Settings page) is subtracted from the
+ * actual login instant before it's stored/evaluated -- check-in only.
  */
 async function registerOfficeAttendance(employeeId, { latitude, longitude, accuracy }) {
-  const now = new Date();
-  const workingDateKey = getWorkingDateKey(now);
+  const settings = await settingsService.getSettings();
+  const checkInTime = applyLoginBuffer(new Date(), settings);
+  const workingDateKey = getWorkingDateKey(checkInTime);
 
   await assertNoExistingAttendance(employeeId, workingDateKey);
 
-  const officeDistanceMeters = verifyWithinOfficeRadius(latitude, longitude);
-  const latenessStatus = calculateLatenessStatus(now);
+  const officeDistanceMeters = await verifyWithinOfficeRadius(latitude, longitude);
+  const latenessStatus = calculateLatenessStatus(checkInTime, settings);
 
   return createAttendanceRecord({
     employeeId,
     workingDateKey,
-    date: now,
+    date: checkInTime,
     loginType: "OFFICE",
-    checkInTime: now,
+    checkInTime,
     latitude,
     longitude,
     locationAccuracy: accuracy ?? null,
@@ -46,19 +51,20 @@ async function registerDistanceAttendance(employeeId, { latitude, longitude, acc
   }
   assertValidCoordinates(latitude, longitude);
 
-  const now = new Date();
-  const workingDateKey = getWorkingDateKey(now);
+  const settings = await settingsService.getSettings();
+  const checkInTime = applyLoginBuffer(new Date(), settings);
+  const workingDateKey = getWorkingDateKey(checkInTime);
 
   await assertNoExistingAttendance(employeeId, workingDateKey);
 
-  const latenessStatus = calculateLatenessStatus(now);
+  const latenessStatus = calculateLatenessStatus(checkInTime, settings);
 
   return createAttendanceRecord({
     employeeId,
     workingDateKey,
-    date: now,
+    date: checkInTime,
     loginType: "DISTANCE",
-    checkInTime: now,
+    checkInTime,
     reason: reason.trim(),
     latitude,
     longitude,
@@ -121,7 +127,7 @@ async function registerCheckOut(employeeId, { latitude, longitude, accuracy } = 
   let distanceMeters = null;
 
   if (attendance.loginType === "OFFICE") {
-    distanceMeters = verifyWithinOfficeRadius(latitude, longitude);
+    distanceMeters = await verifyWithinOfficeRadius(latitude, longitude);
   } else if (attendance.loginType === "DISTANCE") {
     // For remote login, check-out distance must be within 50m of check-in geo-location
     distanceMeters = haversineDistanceMeters(

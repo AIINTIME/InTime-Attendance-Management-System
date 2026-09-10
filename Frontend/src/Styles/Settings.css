@@ -1,0 +1,1100 @@
+/* ==========================================================================
+   InTime Admin - Settings Page Styles (Mockup Matching)
+   ========================================================================== */
+
+.settings-page-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  color: #0F172A;
+}
+
+/* ══════════════════════════ TOP HEADER BAR ══════════════════════════ */
+.settings-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 4px 0 6px;
+}
+
+.settings-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-main-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.settings-main-subtitle {
+  font-size: 13.5px;
+  color: #64748B;
+  margin: 0;
+}
+
+.settings-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 8px;
+  border: none;
+  background: #1877F2;
+  color: #FFFFFF;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(24, 119, 242, 0.25);
+  transition: all 0.18s ease-in-out;
+}
+
+.settings-save-btn:hover:not(:disabled) {
+  background: #1466D1;
+  box-shadow: 0 6px 18px rgba(24, 119, 242, 0.35);
+  transform: translateY(-1px);
+}
+
+.settings-save-btn:disabled {
+  background: #CBD5E1;
+  color: #64748B;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.85;
+}
+
+.settings-save-btn.is-saving:disabled {
+  background: #1877F2;
+  color: #FFFFFF;
+  opacity: 0.75;
+  cursor: wait;
+}
+
+/* ══════════════════════════ CARDS GENERAL ══════════════════════════ */
+.settings-card {
+  background: #FFFFFF;
+  border: 1px solid #E5EAF2;
+  border-radius: 14px;
+  padding: 22px 24px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+  position: relative;
+}
+
+.settings-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.settings-card-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #EFF6FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-blue {
+  color: #2563EB;
+}
+
+.settings-card-title {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0 0 2px;
+}
+
+.settings-card-subtitle {
+  font-size: 12.5px;
+  color: #64748B;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ══════════════════════════ ROW 1: SPLIT GRID ══════════════════════════ */
+.settings-row-split {
+  display: grid;
+  grid-template-columns: 1.18fr 1fr;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.settings-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Office Location Card ── */
+.office-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-address-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.settings-address-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 14px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  transition: border-color 0.15s ease;
+}
+
+.settings-address-input-wrap:focus-within {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.address-pin-icon {
+  color: #64748B;
+  flex-shrink: 0;
+}
+
+.settings-address-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13.5px;
+  color: #0F172A;
+  padding: 0;
+}
+
+.address-clear-btn {
+  background: none;
+  border: none;
+  color: #94A3B8;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.15s ease;
+}
+
+.address-clear-btn:hover {
+  color: #0F172A;
+}
+
+/* Default Location Button */
+.settings-default-location-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.18s ease-in-out;
+}
+
+.settings-default-location-btn:hover {
+  background: #F1F5F9;
+  border-color: #94A3B8;
+  color: #0F172A;
+}
+
+/* Use Current Location Button */
+.settings-use-current-location-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid #BFDBFE;
+  background: #EFF6FF;
+  color: #2563EB;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.18s ease-in-out;
+}
+
+.settings-use-current-location-btn:hover:not(:disabled) {
+  background: #DBEAFE;
+  border-color: #93C5FD;
+  color: #1D4ED8;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15);
+}
+
+.settings-use-current-location-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.locate-btn-icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Current location detected pill/badge */
+.current-location-active-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #065F46;
+  margin-bottom: 14px;
+}
+
+.badge-check-icon {
+  color: #059669;
+  flex-shrink: 0;
+}
+
+.office-interior-grid {
+  display: grid;
+  grid-template-columns: 1.45fr 1fr;
+  gap: 16px;
+  flex: 1;
+  align-items: stretch;
+}
+
+/* ── Map Preview with Real Map ── */
+.office-map-container {
+  height: 100%;
+  min-height: 240px;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  background: #E8F1EC;
+}
+
+.office-real-leaflet-map {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+/* Custom Office POI Marker on Leaflet map matching Google Maps */
+.custom-leaflet-office-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.office-poi-marker-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  cursor: grab;
+  user-select: none;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+}
+
+.office-poi-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.office-poi-text-box {
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 3px 7px;
+  border-radius: 5px;
+  border: 1px solid rgba(185, 28, 28, 0.25);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.office-poi-name-en {
+  font-size: 11px;
+  font-weight: 800;
+  color: #B91C1C;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.office-poi-name-bn {
+  font-size: 10px;
+  font-weight: 700;
+  color: #B91C1C;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Tooltip badge floating over real map */
+.office-map-tooltip {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.14);
+  pointer-events: none;
+  min-width: 130px;
+  max-width: 220px;
+  z-index: 999;
+}
+
+.tooltip-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0F172A;
+  margin-bottom: 2px;
+}
+
+.tooltip-area {
+  font-size: 10.5px;
+  color: #64748B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tooltip-coords {
+  font-size: 10px;
+  color: #64748B;
+  margin-top: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltip-arrow {
+  display: none;
+}
+
+/* Map Controls */
+.office-map-controls {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 999;
+}
+
+.map-zoom-btn {
+  width: 26px;
+  height: 25px;
+  background: #FFFFFF;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.map-zoom-btn:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+
+.map-zoom-divider {
+  height: 1px;
+  background: #E2E8F0;
+  width: 100%;
+}
+
+.office-map-locate-btn,
+.office-map-coords-btn {
+  position: absolute;
+  top: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: all 0.15s ease;
+  z-index: 999;
+}
+
+.office-map-locate-btn {
+  right: 10px;
+}
+
+.office-map-coords-btn {
+  right: 42px;
+}
+
+.office-map-locate-btn:hover,
+.office-map-coords-btn:hover {
+  background: #F1F5F9;
+  color: #2563EB;
+}
+
+/* ── Allowed Radius Column ── */
+.office-radius-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  gap: 12px;
+}
+
+.radius-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.radius-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.radius-info-icon {
+  color: #94A3B8;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.radius-large-display {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0F172A;
+  text-align: center;
+  margin: 4px 0 2px;
+}
+
+.radius-slider-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.radius-info-banner {
+  background: #EFF6FF;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.info-badge-icon {
+  color: #2563EB;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.radius-info-text {
+  font-size: 11.5px;
+  color: #1E40AF;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Coordinates Drawer */
+.coords-drawer {
+  margin-top: 16px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.coords-drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 10px;
+}
+
+.coords-close-btn {
+  background: none;
+  border: none;
+  color: #94A3B8;
+  cursor: pointer;
+  padding: 2px;
+}
+
+.coords-drawer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.coords-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.coords-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748B;
+}
+
+.coords-field input {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  font-size: 12px;
+  background: #FFFFFF;
+}
+
+/* ══════════════════════════ RIGHT COLUMN: TIMINGS & BUFFER ══════════════════════════ */
+
+/* Organization Timings */
+.timings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.timing-box {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.timing-box:hover {
+  border-color: #CBD5E1;
+  background: #F1F5F9;
+}
+
+.timing-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.timing-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.check-in-dot {
+  background: #10B981;
+}
+
+.check-out-dot {
+  background: #EF4444;
+}
+
+.timing-badge-icon {
+  flex-shrink: 0;
+}
+
+.check-in-icon {
+  color: #10B981;
+}
+
+.check-out-icon {
+  color: #EF4444;
+}
+
+.timing-badge-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.timing-value-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  height: 40px;
+  padding: 0 12px;
+  position: relative;
+}
+
+.timing-value-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0F172A;
+  letter-spacing: 0.02em;
+}
+
+.timing-right-icon {
+  color: #94A3B8;
+}
+
+.timing-native-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Login Buffer Time */
+.buffer-content-split {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 18px;
+  align-items: center;
+}
+
+.buffer-slider-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.buffer-large-display {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0F172A;
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+.buffer-example-box {
+  background: #EFF6FF;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.buffer-example-text {
+  font-size: 12px;
+  color: #1E40AF;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ══════════════════════════ ROW 2: LATE STATUS CRITERIA ══════════════════════════ */
+.late-criteria-columns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 18px;
+}
+
+.late-tier-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tier-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tier-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.dot-blue {
+  background: #2563EB;
+}
+
+.dot-orange {
+  background: #F97316;
+}
+
+.dot-red {
+  background: #EF4444;
+}
+
+.tier-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.tier-large-display {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0F172A;
+  text-align: center;
+  margin: 2px 0;
+}
+
+.tier-slider-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Legend Banner */
+.late-legend-banner {
+  background: #EFF6FF;
+  border-radius: 8px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12.5px;
+  color: #1E40AF;
+}
+
+.legend-prefix {
+  font-weight: 600;
+}
+
+.legend-items-wrap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ══════════════════════════ ROW 3: HALF DAY CONFIGURATION ══════════════════════════ */
+.half-day-inner-box {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.half-day-left-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.half-day-sub-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #EFF6FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.half-day-item-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0F172A;
+  margin-bottom: 1px;
+}
+
+.half-day-item-subtitle {
+  font-size: 12px;
+  color: #64748B;
+}
+
+.saturdays-checkboxes-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.saturday-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.saturday-hidden-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.custom-checkbox-box {
+  width: 17px;
+  height: 17px;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 4px;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.custom-checkbox-box.checked {
+  background: #2563EB;
+  border-color: #2563EB;
+}
+
+.check-svg {
+  color: #FFFFFF;
+}
+
+.saturday-checkbox-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.saturday-checkbox-label.is-checked .saturday-checkbox-text {
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.half-day-info-banner {
+  background: #EFF6FF;
+  border-radius: 8px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.half-day-info-text {
+  font-size: 12.5px;
+  color: #1E40AF;
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* ══════════════════════════ RANGE SLIDERS ══════════════════════════ */
+.custom-range-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  min-height: 6px !important;
+  max-height: 6px !important;
+  border-radius: 999px;
+  border: none !important;
+  padding: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  margin: 10px 0 4px;
+  box-sizing: border-box;
+}
+
+.custom-range-slider:focus {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.custom-range-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+
+.custom-range-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+
+.custom-range-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.1s ease;
+  margin-top: -6px;
+  box-sizing: border-box;
+}
+
+.custom-range-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+  border: none;
+}
+
+.custom-range-slider:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+/* Thumb border colors */
+.blue-slider::-webkit-slider-thumb {
+  border: 4px solid #2563EB;
+}
+.blue-slider::-moz-range-thumb {
+  border: 4px solid #2563EB;
+}
+
+.orange-slider::-webkit-slider-thumb {
+  border: 4px solid #F97316;
+}
+.orange-slider::-moz-range-thumb {
+  border: 4px solid #F97316;
+}
+
+.red-slider::-webkit-slider-thumb {
+  border: 4px solid #EF4444;
+}
+.red-slider::-moz-range-thumb {
+  border: 4px solid #EF4444;
+}
+
+.slider-labels-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #64748B;
+  font-weight: 500;
+}
+
+/* ══════════════════════════ RESPONSIVE BREAKPOINTS ══════════════════════════ */
+@media (max-width: 1120px) {
+  .settings-row-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 820px) {
+  .late-criteria-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .office-interior-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .office-map-container {
+    height: 240px;
+  }
+
+  .buffer-content-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .timings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .settings-save-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .settings-address-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-use-current-location-btn {
+    justify-content: center;
+  }
+
+  .saturdays-checkboxes-row {
+    gap: 12px;
+  }
+}

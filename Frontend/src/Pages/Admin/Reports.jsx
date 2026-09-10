@@ -3,6 +3,7 @@ import { FileSpreadsheet, FileText, FileBarChart } from "lucide-react";
 import { listEmployees, previewReport, buildExportUrl } from "../../Services/adminService";
 import { formatDate, formatTime, formatMinutesAsHours } from "../../Utils/dateUtils";
 import StatusBadge from "../../Components/Common/StatusBadge";
+import CheckInTime from "../../Components/Common/CheckInTime";
 import EmptyState from "../../Components/Common/EmptyState";
 import { useToast } from "../../Context/ToastContext";
 
@@ -187,7 +188,9 @@ export default function Reports() {
                         {r.employeeId?.name} <span className="muted small">({r.employeeId?.employeeId})</span>
                       </td>
                       <td>{formatDate(r.date)}</td>
-                      <td>{formatTime(r.checkInTime)}</td>
+                      <td>
+                        <CheckInTime time={r.checkInTime} latenessStatus={r.latenessStatus} />
+                      </td>
                       <td>{r.loginType === "OFFICE" ? "Office" : "Distance"}</td>
                       <td>{formatMinutesAsHours(r.totalWorkingMinutes)}</td>
                       <td>

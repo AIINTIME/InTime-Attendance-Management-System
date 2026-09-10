@@ -7,9 +7,10 @@ export const OFFICE_LOCATION = {
 };
 
 export const ATTENDANCE_STATUS = {
-  ON_TIME: { label: "On Time", color: "success" },
-  SLIGHT_LATE: { label: "Slight Late", color: "warning" },
-  VERY_LATE: { label: "Very Late", color: "danger" },
+  ON_TIME: { label: "On Time", color: "success", hex: "#10B981" },
+  SLIGHT_LATE: { label: "Slight Late", color: "info", hex: "#2563EB" },
+  LATE: { label: "Late", color: "warning", hex: "#F97316" },
+  VERY_LATE: { label: "Very Late", color: "danger", hex: "#EF4444" },
 };
 
 export const LOGIN_TYPE = {
@@ -24,6 +25,6 @@ export const GOOGLE_MAPS_QUERY_URL = (latitude, longitude) =>
 // rendered in a production build (gated by import.meta.env.DEV at the call
 // site). Update these if your local seed credentials differ.
 export const DEMO_CREDENTIALS = {
-  employee: { email: "employee@intime.local", password: "Employee123!" },
-  admin: { email: "admin@intime.local", password: "ChangeMe123!" },
+  employee: { email: "demo@intimeinc.co.in", password: "1234567890" },
+  admin: { email: "tanuka@intimeinc.co.in", password: "1234567890" },
 };

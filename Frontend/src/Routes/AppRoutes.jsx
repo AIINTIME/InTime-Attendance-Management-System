@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { CalendarCheck, BarChart3 } from "lucide-react";
 import { useAuth } from "../Context/AuthContext";
 import FullScreenLoader from "../Components/Loading/FullScreenLoader";
+import ComingSoon from "../Components/Common/ComingSoon";
 
 import EmployeeLogin from "../Pages/Auth/EmployeeLogin";
 import AdminLogin from "../Pages/Auth/AdminLogin";
@@ -17,8 +19,8 @@ import AdminDashboard from "../Pages/Admin/AdminDashboard";
 import EmployeeManagement from "../Pages/Admin/EmployeeManagement";
 import EmployeeDetails from "../Pages/Admin/EmployeeDetails";
 import AttendanceManagement from "../Pages/Admin/AttendanceManagement";
-import Reports from "../Pages/Admin/Reports";
 import AdminProfile from "../Pages/Admin/AdminProfile";
+import AdminSettings from "../Pages/Admin/Settings";
 
 import ProtectedRoute from "./ProtectedRoute";
 import AdminRoute from "./AdminRoute";
@@ -57,8 +59,28 @@ export default function AppRoutes() {
           <Route path="/admin/employees" element={<EmployeeManagement />} />
           <Route path="/admin/employees/:id" element={<EmployeeDetails />} />
           <Route path="/admin/attendance" element={<AttendanceManagement />} />
-          <Route path="/admin/reports" element={<Reports />} />
+          <Route
+            path="/admin/leave-management"
+            element={
+              <ComingSoon
+                icon={CalendarCheck}
+                title="Leave Management"
+                message="Reviewing and approving employee leave requests is coming soon."
+              />
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <ComingSoon
+                icon={BarChart3}
+                title="Analysis"
+                message="Attendance analytics and insights are coming soon."
+              />
+            }
+          />
           <Route path="/admin/profile" element={<AdminProfile />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
         </Route>
       </Route>
 

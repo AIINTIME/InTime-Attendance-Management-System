@@ -37,7 +37,7 @@ const attendanceSchema = new mongoose.Schema(
 
     latenessStatus: {
       type: String,
-      enum: ["ON_TIME", "SLIGHT_LATE", "VERY_LATE"],
+      enum: ["ON_TIME", "SLIGHT_LATE", "LATE", "VERY_LATE"],
       required: true,
     },
     insufficientHours: { type: Boolean, default: false },

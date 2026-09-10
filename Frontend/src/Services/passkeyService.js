@@ -47,6 +47,9 @@ function isIpAddressHost() {
 }
 
 function describeCeremonyError(err) {
+  if (err.name === "PasskeyCeremonyTimeout") {
+    return err.message;
+  }
   if (err.name === "SecurityError" && isIpAddressHost()) {
     return `Passkeys can't be tied to an IP address (${window.location.hostname}) -- this is a hard rule in the WebAuthn standard, not something a certificate can fix. Use a real hostname instead: either the HTTPS tunnel link, or a hostname that resolves to this device (e.g. via your router's local DNS or a service like nip.io).`;
   }
@@ -56,6 +59,29 @@ function describeCeremonyError(err) {
   // Surface the raw browser error rather than a generic message, so a
   // fresh failure mode isn't silently hidden the next time something breaks.
   return `Passkey ceremony failed: ${err.name || "Error"}${err.message ? ` -- ${err.message}` : ""}`;
+}
+
+// The browser's own WebAuthn UI can occasionally get stuck with no visible
+// prompt at all -- most commonly a leftover pending request from an earlier
+// attempt in the same tab (e.g. after several hot-reloads during dev, or a
+// component unmounting mid-ceremony) blocking the next one silently. There's
+// no public API to cancel/abort it from here, so this timeout at least stops
+// the UI from waiting forever with no feedback and tells the user the one
+// thing that reliably clears it: reload the page.
+const CEREMONY_TIMEOUT_MS = 65000;
+
+function withTimeout(promise) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      const timeoutError = new Error(
+        "Your device didn't respond to the passkey prompt in time. If no fingerprint/Face ID/PIN dialog appeared at all, reload this page and try again -- a stuck request from an earlier attempt can silently block new ones."
+      );
+      timeoutError.name = "PasskeyCeremonyTimeout";
+      reject(timeoutError);
+    }, CEREMONY_TIMEOUT_MS);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
 export function guessDeviceNickname() {
@@ -82,7 +108,7 @@ export async function registerPasskey(nickname) {
 
   let attestation;
   try {
-    attestation = await startRegistration({ optionsJSON: options });
+    attestation = await withTimeout(startRegistration({ optionsJSON: options }));
   } catch (err) {
     if (err.name === "InvalidStateError") {
       throw new Error("A passkey is already registered on this device.");
@@ -111,7 +137,7 @@ export async function verifyPasskey() {
 
   let assertion;
   try {
-    assertion = await startAuthentication({ optionsJSON: options });
+    assertion = await withTimeout(startAuthentication({ optionsJSON: options }));
   } catch (err) {
     if (err.name === "NotAllowedError") {
       throw new Error("Passkey verification was cancelled.");
