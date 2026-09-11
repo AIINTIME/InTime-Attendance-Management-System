@@ -1,7 +1,6 @@
 const { verifyAccessToken } = require("../utils/jwt");
 const { ApiError } = require("./errorMiddleware");
-const Employee = require("../models/Employee");
-const Admin = require("../models/Admin");
+const prisma = require("../config/prisma");
 
 /**
  * Requires a valid access-token cookie. Populates req.user = { id, role }.
@@ -34,7 +33,7 @@ async function requireEmployee(req, res, next) {
     if (!req.user || req.user.role !== "employee") {
       throw new ApiError(403, "Employee access only.", "FORBIDDEN");
     }
-    const employee = await Employee.findById(req.user.id);
+    const employee = await prisma.employee.findUnique({ where: { id: req.user.id } });
     if (!employee) {
       throw new ApiError(401, "Account not found.", "NOT_FOUND");
     }
@@ -53,7 +52,7 @@ async function requireAdmin(req, res, next) {
     if (!req.user || req.user.role !== "admin") {
       throw new ApiError(403, "Admin access only.", "FORBIDDEN");
     }
-    const admin = await Admin.findById(req.user.id);
+    const admin = await prisma.admin.findUnique({ where: { id: req.user.id } });
     if (!admin) {
       throw new ApiError(401, "Account not found.", "NOT_FOUND");
     }

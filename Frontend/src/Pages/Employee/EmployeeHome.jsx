@@ -1,7 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "../../Context/ToastContext";
-import { getTodayAttendance } from "../../Services/attendanceService";
+import {
+  getTodayAttendance,
+  getMyRecords,
+  getWorkingDays,
+  getEmployeeSettings,
+} from "../../Services/attendanceService";
 import { formatMinutesAsHours } from "../../Utils/dateUtils";
 
 /* Helper to format ISO date/string into 12-hour AM/PM format (e.g. 09:02 AM) */
@@ -18,8 +23,77 @@ function formatTimeAmPm(dateInput) {
     .toUpperCase();
 }
 
+/* Helper to parse holiday date strings in DD/MM/YYYY or YYYY-MM-DD or standard formats */
+function parseHolidayDate(dateStr) {
+  if (!dateStr) return null;
+  const str = String(dateStr).trim();
+  const dmy = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (dmy) {
+    const day = parseInt(dmy[1], 10);
+    const month = parseInt(dmy[2], 10);
+    const year = parseInt(dmy[3], 10);
+    return {
+      day,
+      month,
+      year,
+      dateKey: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+      dateObj: new Date(year, month - 1, day),
+    };
+  }
+  const ymd = str.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+  if (ymd) {
+    const year = parseInt(ymd[1], 10);
+    const month = parseInt(ymd[2], 10);
+    const day = parseInt(ymd[3], 10);
+    return {
+      day,
+      month,
+      year,
+      dateKey: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+      dateObj: new Date(year, month - 1, day),
+    };
+  }
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    return {
+      day,
+      month,
+      year,
+      dateKey: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+      dateObj: d,
+    };
+  }
+  return null;
+}
+
+function toDateKey(year, month, day) {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function literalOccurrenceInMonth(day) {
+  return Math.ceil(day / 7);
+}
+
+function isConfiguredHalfDay(year, month, day, dayOfWeek, halfDayRules) {
+  if (!halfDayRules || halfDayRules.length === 0) return false;
+  const occurrence = literalOccurrenceInMonth(day);
+  return halfDayRules.some(
+    (rule) => rule.dayOfWeek === dayOfWeek && rule.occurrence === occurrence
+  );
+}
+
 /* ── Donut Chart Component ───────────────────────────────────── */
-function DonutChart({ present = 18, weeklyOff = 3, leave = 1, absent = 0, total = 22 }) {
+function DonutChart({
+  present = 0,
+  weeklyOff = 0,
+  leave = 0,
+  absent = 0,
+  total = 24,
+  daysInMonth = 30,
+}) {
   const size = 150;
   const stroke = 15;
   const r = (size - stroke) / 2;
@@ -27,17 +101,19 @@ function DonutChart({ present = 18, weeklyOff = 3, leave = 1, absent = 0, total 
   const cx = size / 2,
     cy = size / 2;
 
-  const safeTotal = total > 0 ? total : 22;
+  const safeTotal = total > 0 ? total : 24;
+  const baseDays = daysInMonth > 0 ? daysInMonth : 30;
+
   const segments = [
     { value: present, color: "#10B981" }, // Green - Present
-    { value: weeklyOff, color: "#60A5FA" }, // Light Blue - Weekly Off
+    { value: weeklyOff, color: "#3B82F6" }, // Blue - Weekly Off
     { value: leave, color: "#F59E0B" }, // Yellow - Leave
     { value: absent, color: "#EF4444" }, // Red - Absent
   ];
 
   let offset = 0;
   const arcs = segments.map((s) => {
-    const pct = s.value / safeTotal;
+    const pct = s.value / baseDays;
     const dash = pct * circ;
     const gap = circ - dash;
     const arc = { color: s.color, dash, gap, offset };
@@ -76,27 +152,134 @@ function DonutChart({ present = 18, weeklyOff = 3, leave = 1, absent = 0, total 
 }
 
 /* ── Mini Calendar Component ─────────────────────────────────── */
-function MiniCalendar() {
-  const [viewDate, setViewDate] = useState(new Date(2025, 8, 1));
+function MiniCalendar({ holidays = [], halfDayRules = [] }) {
+  const [viewDate, setViewDate] = useState(() => new Date());
+  const [viewRecords, setViewRecords] = useState([]);
 
   const year = viewDate.getFullYear();
-  const month = viewDate.getMonth();
+  const month = viewDate.getMonth(); // 0-indexed
   const monthName = viewDate.toLocaleString("en-US", { month: "long" });
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
   const prevMonthDays = new Date(year, month, 0).getDate();
+
+  // Load attendance records for the calendar month currently viewed
+  useEffect(() => {
+    let active = true;
+    const fetchRecords = async () => {
+      try {
+        const fromDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+        const toDate = `${year}-${String(month + 1).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`;
+        const res = await getMyRecords({ fromDate, toDate, limit: 100 });
+        if (active && res?.records) {
+          setViewRecords(res.records);
+        }
+      } catch (err) {
+        console.error("Failed to load calendar month records:", err);
+      }
+    };
+    fetchRecords();
+    return () => {
+      active = false;
+    };
+  }, [year, month, daysInMonth]);
+
+  // Map of holiday dates: YYYY-MM-DD -> holiday
+  const holidayMap = useMemo(() => {
+    const map = new Map();
+    if (!Array.isArray(holidays)) return map;
+    for (const h of holidays) {
+      const parsed = parseHolidayDate(h.date);
+      if (parsed) {
+        map.set(parsed.dateKey, h);
+      }
+    }
+    return map;
+  }, [holidays]);
+
+  // Map of attendance records: YYYY-MM-DD -> record
+  const recordsMap = useMemo(() => {
+    const map = new Map();
+    if (!Array.isArray(viewRecords)) return map;
+    for (const r of viewRecords) {
+      if (r.workingDateKey) {
+        map.set(r.workingDateKey, r);
+      } else if (r.date) {
+        const d = new Date(r.date);
+        if (!isNaN(d.getTime())) {
+          map.set(toDateKey(d.getFullYear(), d.getMonth() + 1, d.getDate()), r);
+        }
+      }
+    }
+    return map;
+  }, [viewRecords]);
+
+  // Today reference at midnight
+  const today = new Date();
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
 
   const cells = [];
   for (let i = firstDay - 1; i >= 0; i--) {
-    cells.push({ day: prevMonthDays - i, isCurrent: false });
+    cells.push({ day: prevMonthDays - i, isCurrent: false, statusClass: "cal-muted" });
   }
+
   for (let d = 1; d <= daysInMonth; d++) {
-    cells.push({ day: d, isCurrent: true, isSelected: d === 3 && month === 8 && year === 2025 });
+    const dateKey = toDateKey(year, month + 1, d);
+    const dateObj = new Date(year, month, d);
+    const cellMidnight = dateObj.getTime();
+    const dayOfWeek = dateObj.getDay();
+
+    const isToday = cellMidnight === todayMidnight;
+    const isPast = cellMidnight < todayMidnight;
+    const isFuture = cellMidnight > todayMidnight;
+
+    const holiday = holidayMap.get(dateKey);
+    const isSunday = dayOfWeek === 0;
+    const isOffSaturday =
+      dayOfWeek === 6 && isConfiguredHalfDay(year, month + 1, d, 6, halfDayRules);
+    const isWeeklyOff = isSunday || isOffSaturday;
+    const record = recordsMap.get(dateKey);
+
+    let statusClass = "";
+    let title = "";
+
+    // 1. Holiday: purple color (all holidays in calendar marked with purple color)
+    if (holiday) {
+      statusClass = "status-holiday";
+      title = `${holiday.name} (Holiday)`;
+    } else if (record) {
+      // 2. Present: green outline box
+      statusClass = "status-present";
+      title = `Present (${formatTimeAmPm(record.checkInTime)})`;
+    } else if (isWeeklyOff && (isPast || isToday)) {
+      // 3. Weekly off: blue outline box for elapsed/current off days
+      statusClass = "status-weekoff";
+      title = "Weekly Off";
+    } else if (isPast) {
+      // 4. Past working day without attendance: absent red outline box
+      statusClass = "status-absent";
+      title = "Absent";
+    } else if (isToday) {
+      statusClass = "is-today";
+      title = "Today";
+    } else {
+      // 5. Upcoming dates: keep blank only date no border with color
+      statusClass = "status-upcoming";
+      title = isWeeklyOff ? "Weekly Off" : "";
+    }
+
+    cells.push({
+      day: d,
+      isCurrent: true,
+      statusClass,
+      title,
+    });
   }
+
   const remaining = 35 - cells.length;
-  for (let d = 1; d <= remaining; d++) {
-    cells.push({ day: d, isCurrent: false });
+  const extraNeeded = remaining < 0 ? 42 - cells.length : remaining;
+  for (let d = 1; d <= extraNeeded; d++) {
+    cells.push({ day: d, isCurrent: false, statusClass: "cal-muted" });
   }
 
   const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
@@ -134,9 +317,10 @@ function MiniCalendar() {
         {cells.map((c, i) => (
           <div
             key={i}
-            className={`cal-day-cell ${!c.isCurrent ? "cal-muted" : ""} ${c.isSelected ? "cal-selected" : ""}`}
+            className={`cal-day-cell ${!c.isCurrent ? "cal-muted" : ""} ${c.statusClass || ""}`}
+            title={c.title || ""}
           >
-            <span>{c.day}</span>
+            <div className="cal-day-inner">{c.day}</div>
           </div>
         ))}
       </div>
@@ -155,8 +339,12 @@ function MiniCalendar() {
           Leave
         </span>
         <span>
-          <span className="leg-dot" style={{ background: "#60A5FA" }} />
+          <span className="leg-dot" style={{ background: "#3B82F6" }} />
           Weekly Off
+        </span>
+        <span>
+          <span className="leg-dot" style={{ background: "#8B5CF6" }} />
+          Holiday
         </span>
       </div>
     </div>
@@ -169,30 +357,54 @@ export default function EmployeeHome() {
   const toast = useToast();
 
   const [todayAttendance, setTodayAttendance] = useState(null);
+  const [recentRecords, setRecentRecords] = useState([]);
+  const [currentMonthRecords, setCurrentMonthRecords] = useState([]);
+  const [orgSettings, setOrgSettings] = useState(null);
+  const [workingDaysData, setWorkingDaysData] = useState(null);
   const [loadingAttendance, setLoadingAttendance] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  /* Fetch live attendance from real API */
+  /* Fetch live attendance, settings, and records from real APIs */
   useEffect(() => {
     let isMounted = true;
-    const loadToday = async () => {
+    const loadData = async () => {
       try {
-        const att = await getTodayAttendance();
-        if (isMounted) setTodayAttendance(att || null);
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const lastDay = new Date(year, month, 0).getDate();
+        const fromDate = `${year}-${String(month).padStart(2, "0")}-01`;
+        const toDate = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
+        const [todayAtt, recents, monthRecs, settings, wDays] = await Promise.allSettled([
+          getTodayAttendance(),
+          getMyRecords({ limit: 5 }),
+          getMyRecords({ fromDate, toDate, limit: 100 }),
+          getEmployeeSettings(),
+          getWorkingDays(year, month),
+        ]);
+
+        if (!isMounted) return;
+
+        if (todayAtt.status === "fulfilled") setTodayAttendance(todayAtt.value || null);
+        if (recents.status === "fulfilled") setRecentRecords(recents.value?.records || []);
+        if (monthRecs.status === "fulfilled") setCurrentMonthRecords(monthRecs.value?.records || []);
+        if (settings.status === "fulfilled") setOrgSettings(settings.value || null);
+        if (wDays.status === "fulfilled") setWorkingDaysData(wDays.value || null);
       } catch (err) {
-        console.error("Failed to fetch today attendance:", err);
+        console.error("Failed to load employee dashboard data:", err);
       } finally {
         if (isMounted) setLoadingAttendance(false);
       }
     };
 
-    loadToday();
+    loadData();
 
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        loadToday();
+        loadData();
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -236,59 +448,144 @@ export default function EmployeeHome() {
   const isCheckedIn = !!todayAttendance?.checkInTime;
   const isCheckedOut = !!todayAttendance?.checkOutTime;
 
-  const pastHistory = [
-    {
-      month: "SEP",
-      day: "03",
-      weekday: "Wednesday",
-      status: "Present",
-      statusType: "present",
-      checkIn: "09:02 AM",
-      checkOut: "-- : --",
-    },
-    {
-      month: "SEP",
-      day: "02",
-      weekday: "Tuesday",
-      status: "Present",
-      statusType: "present",
-      checkIn: "09:05 AM",
-      checkOut: "06:01 PM",
-    },
-    {
-      month: "SEP",
-      day: "01",
-      weekday: "Monday",
-      status: "Present",
-      statusType: "present",
-      checkIn: "09:00 AM",
-      checkOut: "06:03 PM",
-    },
-    {
-      month: "AUG",
-      day: "29",
-      weekday: "Friday",
-      status: "Absent",
-      statusType: "absent",
-      checkIn: "-- : --",
-      checkOut: "-- : --",
-    },
-    {
-      month: "AUG",
-      day: "28",
-      weekday: "Thursday",
-      status: "Present",
-      statusType: "present",
-      checkIn: "09:01 AM",
-      checkOut: "06:05 PM",
-    },
-  ];
+  /* Fast lookup set of holiday date keys (YYYY-MM-DD) */
+  const holidayKeySet = useMemo(() => {
+    const set = new Set();
+    if (Array.isArray(orgSettings?.holidays)) {
+      for (const h of orgSettings.holidays) {
+        const p = parseHolidayDate(h.date);
+        if (p) set.add(p.dateKey);
+      }
+    }
+    return set;
+  }, [orgSettings]);
 
-  const upcomingHolidays = [
-    { month: "OCT", day: "02", name: "Gandhi Jayanti", weekday: "Thursday" },
-    { month: "OCT", day: "20", name: "Diwali", weekday: "Monday" },
-    { month: "DEC", day: "25", name: "Christmas Day", weekday: "Thursday" },
-  ];
+  /* Real attendance history formatted for display */
+  const attendanceHistoryList = useMemo(() => {
+    if (!recentRecords || recentRecords.length === 0) {
+      return [];
+    }
+    return recentRecords.map((r) => {
+      const d = new Date(r.date || r.checkInTime);
+      const month = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
+      const day = String(d.getDate()).padStart(2, "0");
+      const weekday = d.toLocaleString("en-US", { weekday: "long" });
+
+      let status = "Present";
+      let statusType = "green";
+
+      if (r.insufficientHours) {
+        status = "Insufficient Hours";
+        statusType = "orange";
+      } else if (r.latenessStatus === "VERY_LATE") {
+        status = "Very Late";
+        statusType = "red";
+      } else if (r.latenessStatus === "LATE") {
+        status = "Late";
+        statusType = "orange";
+      } else if (r.latenessStatus === "SLIGHT_LATE") {
+        status = "Slight Late";
+        statusType = "blue";
+      } else {
+        status = "Present";
+        statusType = "green";
+      }
+
+      return {
+        month,
+        day,
+        weekday,
+        status,
+        statusType,
+        checkIn: formatTimeAmPm(r.checkInTime),
+        checkOut: formatTimeAmPm(r.checkOutTime),
+      };
+    });
+  }, [recentRecords]);
+
+  /* Real upcoming holidays from admin settings */
+  const upcomingHolidaysList = useMemo(() => {
+    if (!orgSettings?.holidays || !Array.isArray(orgSettings.holidays)) {
+      return [];
+    }
+    const today = new Date();
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+
+    const parsedList = [];
+    for (const h of orgSettings.holidays) {
+      const parsed = parseHolidayDate(h.date);
+      if (parsed && parsed.dateObj) {
+        parsedList.push({
+          ...h,
+          parsed,
+          timestamp: parsed.dateObj.getTime(),
+        });
+      }
+    }
+
+    // Filter holidays on or after today, sort ascending
+    const upcoming = parsedList.filter((h) => h.timestamp >= todayMidnight);
+    upcoming.sort((a, b) => a.timestamp - b.timestamp);
+
+    const listToUse = upcoming.length > 0 ? upcoming : parsedList;
+
+    return listToUse.map((h) => {
+      const month = h.parsed.dateObj.toLocaleString("en-US", { month: "short" }).toUpperCase();
+      const day = String(h.parsed.day).padStart(2, "0");
+      const weekday = h.parsed.dateObj.toLocaleString("en-US", { weekday: "long" });
+      return {
+        name: h.name,
+        month,
+        day,
+        weekday,
+      };
+    });
+  }, [orgSettings]);
+
+  /* Real monthly breakdown for This Month card */
+  const thisMonthStats = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const todayDate = now.getDate();
+
+    const totalWorkingDays = workingDaysData?.totalWorkingDays ?? 24;
+    const weeklyOff = Math.max(0, daysInMonth - totalWorkingDays);
+
+    const presentCount = currentMonthRecords.length;
+    const leaveCount = 0;
+
+    // Absent count: elapsed working days prior to today without attendance
+    let absentCount = 0;
+    for (let d = 1; d < todayDate; d++) {
+      const dObj = new Date(year, month - 1, d);
+      const dayOfWeek = dObj.getDay();
+      const dateKey = toDateKey(year, month, d);
+
+      const isHoliday = holidayKeySet.has(dateKey);
+      const isSun = dayOfWeek === 0;
+      const isOffSat =
+        dayOfWeek === 6 && isConfiguredHalfDay(year, month, d, 6, orgSettings?.halfDayRules || []);
+      const isOff = isSun || isOffSat;
+
+      if (!isHoliday && !isOff) {
+        const attended = currentMonthRecords.some((r) => r.workingDateKey === dateKey);
+        if (!attended) {
+          absentCount++;
+        }
+      }
+    }
+
+    return {
+      present: presentCount,
+      weeklyOff,
+      leave: leaveCount,
+      absent: absentCount,
+      totalWorkingDays,
+      daysInMonth,
+    };
+  }, [workingDaysData, currentMonthRecords, holidayKeySet, orgSettings]);
 
   return (
     <>
@@ -297,14 +594,24 @@ export default function EmployeeHome() {
         {/* 1. Check-In Card (Real Data) */}
         <div className="metric-card">
           <div className="metric-icon-circle green">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#10B981"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
           </div>
           <div className="metric-info">
             <span className="metric-label">Check-In</span>
-            <span className="metric-value" style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            <span
+              className="metric-value"
+              style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+            >
               {todayAttendance?.checkInTime ? (
                 <>
                   <span className={`checkin-status-dot dot-${latenessInfo.color}`} />
@@ -335,7 +642,14 @@ export default function EmployeeHome() {
         {/* 2. Check-Out Card (Real Data) */}
         <div className="metric-card">
           <div className="metric-icon-circle red">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#EF4444"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M10 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4" />
               <polyline points="17 8 22 12 17 16" />
               <line x1="22" y1="12" x2="10" y2="12" />
@@ -361,7 +675,14 @@ export default function EmployeeHome() {
         {/* 3. Working Hours Card (Real Data) */}
         <div className="metric-card">
           <div className="metric-icon-circle blue">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#3B82F6"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <rect x="3" y="4" width="18" height="18" rx="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
@@ -378,7 +699,14 @@ export default function EmployeeHome() {
         {/* 4. Work Status Card (Real Data) */}
         <div className="metric-card">
           <div className="metric-icon-circle purple">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#8B5CF6"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
@@ -410,7 +738,7 @@ export default function EmployeeHome() {
 
       {/* ── Middle 3-Column Content Grid ── */}
       <div className="dashboard-columns-grid">
-        {/* ══ COLUMN 1: Attendance History ══ */}
+        {/* ══ COLUMN 1: Attendance History (Real Data) ══ */}
         <div className="card-box history-box">
           <div className="card-box-header">
             <h2 className="card-box-title">Attendance History</h2>
@@ -420,38 +748,51 @@ export default function EmployeeHome() {
           </div>
 
           <div className="history-list">
-            {pastHistory.map((item, idx) => (
-              <div className="history-row" key={idx}>
-                <div className="date-badge">
-                  <span className="date-badge-month">{item.month}</span>
-                  <span className="date-badge-day">{item.day}</span>
-                </div>
+            {attendanceHistoryList.length === 0 ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "40px 16px",
+                  color: "#94A3B8",
+                  fontSize: "13px",
+                }}
+              >
+                No attendance records found yet.
+              </div>
+            ) : (
+              attendanceHistoryList.map((item, idx) => (
+                <div className="history-row" key={idx}>
+                  <div className="date-badge">
+                    <span className="date-badge-month">{item.month}</span>
+                    <span className="date-badge-day">{item.day}</span>
+                  </div>
 
-                <div className="history-col weekday-col">
-                  <span className="history-weekday">{item.weekday}</span>
-                  <div className="history-status-indicator">
-                    <span className={`status-dot ${item.statusType}`} />
-                    <span className={`status-text ${item.statusType}`}>{item.status}</span>
+                  <div className="history-col weekday-col">
+                    <span className="history-weekday">{item.weekday}</span>
+                    <div className="history-status-indicator">
+                      <span className={`status-dot ${item.statusType}`} />
+                      <span className={`status-text ${item.statusType}`}>{item.status}</span>
+                    </div>
+                  </div>
+
+                  <div className="history-col time-col">
+                    <span className="history-time">{item.checkIn}</span>
+                    <span className="history-time-label">Check-In</span>
+                  </div>
+
+                  <div className="history-col time-col">
+                    <span className="history-time">{item.checkOut}</span>
+                    <span className="history-time-label">Check-Out</span>
                   </div>
                 </div>
-
-                <div className="history-col time-col">
-                  <span className="history-time">{item.checkIn}</span>
-                  <span className="history-time-label">Check-In</span>
-                </div>
-
-                <div className="history-col time-col">
-                  <span className="history-time">{item.checkOut}</span>
-                  <span className="history-time-label">Check-Out</span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
         {/* ══ COLUMN 2: This Month + Upcoming Holiday ══ */}
         <div className="stacked-cards-col">
-          {/* Card 1: This Month */}
+          {/* Card 1: This Month (Real Data) */}
           <div className="card-box this-month-box">
             <div className="card-box-header">
               <h2 className="card-box-title">This Month</h2>
@@ -461,55 +802,72 @@ export default function EmployeeHome() {
             </div>
 
             <div className="this-month-body">
-              <DonutChart present={18} weeklyOff={3} leave={1} absent={0} total={22} />
+              <DonutChart
+                present={thisMonthStats.present}
+                weeklyOff={thisMonthStats.weeklyOff}
+                leave={thisMonthStats.leave}
+                absent={thisMonthStats.absent}
+                total={thisMonthStats.totalWorkingDays}
+                daysInMonth={thisMonthStats.daysInMonth}
+              />
 
               <div className="donut-legend">
                 <div className="legend-item">
                   <span className="leg-dot green" />
                   <span className="leg-name">Present</span>
-                  <span className="leg-val">18</span>
+                  <span className="leg-val">{thisMonthStats.present}</span>
                 </div>
                 <div className="legend-item">
                   <span className="leg-dot blue" />
                   <span className="leg-name">Weekly Off</span>
-                  <span className="leg-val">3</span>
+                  <span className="leg-val">{thisMonthStats.weeklyOff}</span>
                 </div>
                 <div className="legend-item">
                   <span className="leg-dot yellow" />
                   <span className="leg-name">Leave</span>
-                  <span className="leg-val">1</span>
+                  <span className="leg-val">{thisMonthStats.leave}</span>
                 </div>
                 <div className="legend-item">
                   <span className="leg-dot red" />
                   <span className="leg-name">Absent</span>
-                  <span className="leg-val">0</span>
+                  <span className="leg-val">{thisMonthStats.absent}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Card 2: Upcoming Holiday */}
+          {/* Card 2: Upcoming Holiday (Real Data from Admin Settings) */}
           <div className="card-box holiday-box">
             <div className="card-box-header">
               <h2 className="card-box-title">Upcoming Holiday</h2>
-              <Link to="/employee/leave" className="card-box-link">
-                View All →
-              </Link>
             </div>
 
             <div className="holiday-list">
-              {upcomingHolidays.map((h, i) => (
-                <div className="holiday-row" key={i}>
-                  <div className="date-badge">
-                    <span className="date-badge-month">{h.month}</span>
-                    <span className="date-badge-day">{h.day}</span>
-                  </div>
-                  <div className="holiday-info">
-                    <span className="holiday-name">{h.name}</span>
-                    <span className="holiday-weekday">{h.weekday}</span>
-                  </div>
+              {upcomingHolidaysList.length === 0 ? (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "40px 16px",
+                    color: "#94A3B8",
+                    fontSize: "13px",
+                  }}
+                >
+                  No upcoming holidays scheduled
                 </div>
-              ))}
+              ) : (
+                upcomingHolidaysList.map((h, i) => (
+                  <div className="holiday-row" key={i}>
+                    <div className="date-badge">
+                      <span className="date-badge-month">{h.month}</span>
+                      <span className="date-badge-day">{h.day}</span>
+                    </div>
+                    <div className="holiday-info">
+                      <span className="holiday-name">{h.name}</span>
+                      <span className="holiday-weekday">{h.weekday}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -546,7 +904,14 @@ export default function EmployeeHome() {
               {/* Action 3: My History */}
               <button className="qa-card purple" onClick={() => navigate("/employee/records")}>
                 <div className="qa-icon-wrap">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#8B5CF6"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 15 15" />
                   </svg>
@@ -564,7 +929,14 @@ export default function EmployeeHome() {
                 }
               >
                 <div className="qa-icon-wrap">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#F59E0B"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <line x1="18" y1="20" x2="18" y2="10" />
                     <line x1="12" y1="20" x2="12" y2="4" />
                     <line x1="6" y1="20" x2="6" y2="14" />
@@ -575,9 +947,12 @@ export default function EmployeeHome() {
             </div>
           </div>
 
-          {/* Card 2: Calendar */}
+          {/* Card 2: Calendar (Real Data, Purple Holidays, Status Outline Boxes) */}
           <div className="card-box calendar-box">
-            <MiniCalendar />
+            <MiniCalendar
+              holidays={orgSettings?.holidays || []}
+              halfDayRules={orgSettings?.halfDayRules || []}
+            />
           </div>
         </div>
       </div>

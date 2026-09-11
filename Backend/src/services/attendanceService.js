@@ -1,5 +1,4 @@
-const Attendance = require("../models/Attendance");
-const Employee = require("../models/Employee");
+const prisma = require("../config/prisma");
 const { ApiError } = require("../middleware/errorMiddleware");
 const { verifyWithinOfficeRadius, assertValidCoordinates } = require("./locationService");
 const settingsService = require("./settingsService");
@@ -11,6 +10,24 @@ const {
   applyLoginBuffer,
 } = require("../utils/attendanceStatus");
 const { getWorkingDateKey } = require("../utils/timezone");
+
+const EMPLOYEE_SUMMARY_SELECT = {
+  id: true,
+  employeeId: true,
+  name: true,
+  email: true,
+  department: true,
+  designation: true,
+  profilePhoto: true,
+};
+
+// Attaches the populated employee under the `employeeId` key, matching the
+// shape the Frontend has always consumed (Mongoose's `.populate("employeeId")`
+// replaced the field's value with the object while keeping the field name).
+function withPopulatedEmployee(record) {
+  const { employee, ...rest } = record;
+  return { ...rest, employeeId: employee };
+}
 
 /**
  * Registers OFFICE attendance. Backend is authoritative for the office
@@ -75,7 +92,7 @@ async function registerDistanceAttendance(employeeId, { latitude, longitude, acc
 }
 
 async function assertNoExistingAttendance(employeeId, workingDateKey) {
-  const existing = await Attendance.findOne({ employeeId, workingDateKey });
+  const existing = await prisma.attendance.findFirst({ where: { employeeId, workingDateKey } });
   if (existing) {
     throw new ApiError(409, "Attendance already registered for today.", "ALREADY_MARKED");
   }
@@ -83,10 +100,10 @@ async function assertNoExistingAttendance(employeeId, workingDateKey) {
 
 async function createAttendanceRecord(data) {
   try {
-    return await Attendance.create({ ...data, passkeyVerified: true });
+    return await prisma.attendance.create({ data: { ...data, passkeyVerified: true } });
   } catch (err) {
-    // Unique index race: two near-simultaneous requests for the same day.
-    if (err.code === 11000) {
+    // Unique constraint race: two near-simultaneous requests for the same day.
+    if (err.code === "P2002") {
       throw new ApiError(409, "Attendance already registered for today.", "ALREADY_MARKED");
     }
     throw err;
@@ -95,7 +112,7 @@ async function createAttendanceRecord(data) {
 
 async function getTodayAttendance(employeeId) {
   const workingDateKey = getWorkingDateKey(new Date());
-  return Attendance.findOne({ employeeId, workingDateKey });
+  return prisma.attendance.findFirst({ where: { employeeId, workingDateKey } });
 }
 
 /**
@@ -109,7 +126,7 @@ async function getTodayAttendance(employeeId) {
  */
 async function registerCheckOut(employeeId, { latitude, longitude, accuracy } = {}) {
   const workingDateKey = getWorkingDateKey(new Date());
-  const attendance = await Attendance.findOne({ employeeId, workingDateKey });
+  const attendance = await prisma.attendance.findFirst({ where: { employeeId, workingDateKey } });
 
   if (!attendance) {
     throw new ApiError(
@@ -153,43 +170,45 @@ async function registerCheckOut(employeeId, { latitude, longitude, accuracy } = 
   const checkOutTime = new Date();
   const totalWorkingMinutes = calculateWorkingMinutes(attendance.checkInTime, checkOutTime);
 
-  attendance.checkOutTime = checkOutTime;
-  attendance.checkOutLatitude = latitude;
-  attendance.checkOutLongitude = longitude;
-  attendance.checkOutLocationAccuracy = accuracy ?? null;
-  attendance.checkOutDistanceMeters = Math.round(distanceMeters);
-  attendance.totalWorkingMinutes = totalWorkingMinutes;
-  attendance.insufficientHours = isInsufficientHours(totalWorkingMinutes);
-
-  await attendance.save();
-  return attendance;
+  return prisma.attendance.update({
+    where: { id: attendance.id },
+    data: {
+      checkOutTime,
+      checkOutLatitude: latitude,
+      checkOutLongitude: longitude,
+      checkOutLocationAccuracy: accuracy ?? null,
+      checkOutDistanceMeters: Math.round(distanceMeters),
+      totalWorkingMinutes,
+      insufficientHours: isInsufficientHours(totalWorkingMinutes),
+    },
+  });
 }
 
 /**
- * Builds a Mongo filter for attendance records shared by admin listing,
- * report preview/count, and Excel/PDF export -- so all three agree on what
- * "matching records" means.
+ * Builds a Prisma `where` clause for attendance records shared by admin
+ * listing, report preview/count, and Excel/PDF export -- so all three agree
+ * on what "matching records" means.
  *
  * filters: { fromDate, toDate, employeeIds, department, loginType, status }
  */
 async function buildAttendanceFilter(filters = {}) {
-  const match = {};
+  const where = {};
 
   if (filters.fromDate || filters.toDate) {
-    match.workingDateKey = {};
-    if (filters.fromDate) match.workingDateKey.$gte = filters.fromDate;
-    if (filters.toDate) match.workingDateKey.$lte = filters.toDate;
+    where.workingDateKey = {};
+    if (filters.fromDate) where.workingDateKey.gte = filters.fromDate;
+    if (filters.toDate) where.workingDateKey.lte = filters.toDate;
   }
 
   if (filters.loginType) {
-    match.loginType = filters.loginType;
+    where.loginType = filters.loginType;
   }
 
   if (filters.status) {
     if (filters.status === "INSUFFICIENT_HOURS") {
-      match.insufficientHours = true;
+      where.insufficientHours = true;
     } else {
-      match.latenessStatus = filters.status;
+      where.latenessStatus = filters.status;
     }
   }
 
@@ -200,34 +219,36 @@ async function buildAttendanceFilter(filters = {}) {
   }
 
   if (filters.department) {
-    const deptEmployees = await Employee.find({ department: filters.department }).select("_id");
-    const deptIds = deptEmployees.map((e) => e._id.toString());
+    const deptEmployees = await prisma.employee.findMany({
+      where: { department: filters.department },
+      select: { id: true },
+    });
+    const deptIds = deptEmployees.map((e) => e.id);
     employeeIdFilter = employeeIdFilter
-      ? employeeIdFilter.filter((id) => deptIds.includes(id.toString()))
+      ? employeeIdFilter.filter((id) => deptIds.includes(id))
       : deptIds;
   }
 
   if (employeeIdFilter) {
-    match.employeeId = { $in: employeeIdFilter };
+    where.employeeId = { in: employeeIdFilter };
   }
 
-  return match;
+  return where;
 }
 
 async function findAttendanceRecords(filters, { page, limit } = {}) {
-  const match = await buildAttendanceFilter(filters);
-  let query = Attendance.find(match)
-    .populate("employeeId", "employeeId name email department designation profilePhoto")
-    .sort({ date: -1 });
+  const where = await buildAttendanceFilter(filters);
 
-  const total = await Attendance.countDocuments(match);
+  const total = await prisma.attendance.count({ where });
 
-  if (page && limit) {
-    query = query.skip((page - 1) * limit).limit(limit);
-  }
+  const records = await prisma.attendance.findMany({
+    where,
+    include: { employee: { select: EMPLOYEE_SUMMARY_SELECT } },
+    orderBy: { date: "desc" },
+    ...(page && limit ? { skip: (page - 1) * limit, take: limit } : {}),
+  });
 
-  const records = await query;
-  return { records, total };
+  return { records: records.map(withPopulatedEmployee), total };
 }
 
 module.exports = {

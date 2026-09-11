@@ -9,9 +9,10 @@
     "start": "node src/server.js",
     "seed:admin": "node src/scripts/seedAdmin.js",
     "seed:credentials": "node src/scripts/seedCredentials.js",
-    "seed:variety": "node src/scripts/seedAttendanceVariety.js"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "@simplewebauthn/server": "^10.0.1",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
@@ -23,12 +24,17 @@
     "express-validator": "^7.2.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.6.0",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
-    "pdfkit": "^0.15.0"
+    "pdfkit": "^0.15.0",
+    "prisma": "^6.19.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"
+  },
+  "allowScripts": {
+    "prisma@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "@prisma/client@6.19.3": true
   }
 }

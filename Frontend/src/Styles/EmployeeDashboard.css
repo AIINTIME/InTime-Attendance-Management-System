@@ -660,21 +660,25 @@ body, html {
   display: inline-block;
 }
 
-.status-dot.green  { background: #10B981; }
-.status-dot.red    { background: #EF4444; }
-.status-dot.yellow { background: var(--color-amber); }
-.status-dot.blue   { background: #2563EB; }
-.status-dot.orange { background: #F97316; }
+.status-dot.green,
+.status-dot.present  { background: #10B981; }
+.status-dot.red,
+.status-dot.absent   { background: #EF4444; }
+.status-dot.yellow   { background: var(--color-amber); }
+.status-dot.blue     { background: #2563EB; }
+.status-dot.orange   { background: #F97316; }
 
 .status-text {
   font-size: 12px;
   font-weight: 600;
 }
 
-.status-text.green  { color: #059669; }
-.status-text.blue   { color: #2563EB; }
-.status-text.orange { color: #EA580C; }
-.status-text.red    { color: #DC2626; }
+.status-text.green,
+.status-text.present  { color: #059669; }
+.status-text.blue     { color: #2563EB; }
+.status-text.orange   { color: #EA580C; }
+.status-text.red,
+.status-text.absent   { color: #DC2626; }
 
 .work-status-badge {
   background: var(--color-green-bg);
@@ -946,19 +950,54 @@ body, html {
   flex-direction: column;
 }
 
+.holiday-box {
+  padding: 16px 18px 14px 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.holiday-box .card-box-header {
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
 .holiday-list {
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 10px;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
+}
+
+.holiday-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.holiday-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.holiday-list::-webkit-scrollbar-thumb {
+  background: #E2E8F0;
+  border-radius: 4px;
+}
+
+.holiday-list::-webkit-scrollbar-thumb:hover {
+  background: #CBD5E1;
 }
 
 .holiday-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding-bottom: 12px;
+  gap: 14px;
+  padding-bottom: 10px;
   border-bottom: 1px solid #F1F5F9;
+  flex-shrink: 0;
 }
 
 .holiday-row:last-child {
@@ -966,15 +1005,26 @@ body, html {
   border-bottom: none;
 }
 
+.holiday-row .date-badge {
+  width: 42px;
+  height: 44px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
 .holiday-info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .holiday-name {
   font-size: 13.5px;
   font-weight: 600;
   color: var(--text-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .holiday-weekday {
@@ -1040,17 +1090,18 @@ body, html {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-height: 0;
 }
 
 .cal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 6px;
 }
 
 .cal-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-dark);
 }
@@ -1058,11 +1109,11 @@ body, html {
 .cal-right-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .cal-month-label {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: #334155;
 }
@@ -1070,15 +1121,15 @@ body, html {
 .cal-nav {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .cal-nav-btn {
   background: transparent;
   border: none;
   cursor: pointer;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -1093,73 +1144,133 @@ body, html {
 }
 
 .cal-nav-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  row-gap: 8px;
+  row-gap: 2px;
+  column-gap: 3px;
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 4px;
 }
 
 .cal-day-name {
-  font-size: 11.5px;
+  font-size: 10.5px;
   font-weight: 600;
   color: #64748B;
-  padding-bottom: 6px;
+  padding-bottom: 2px;
 }
 
 .cal-day-cell {
-  height: 28px;
+  height: 25px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 500;
+}
+
+.cal-day-cell .cal-day-inner {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
   color: var(--text-dark);
 }
 
-.cal-day-cell.cal-muted {
-  color: #CBD5E1;
+/* 1. Present: Green Outline Box */
+.cal-day-cell.status-present .cal-day-inner {
+  border: 1.5px solid #10B981;
+  color: #059669;
+  background: #ECFDF5;
 }
 
-/* Selected active date (Day 3 in mockup) */
-.cal-day-cell.cal-selected span {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #007AFF;
-  color: #FFFFFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.35);
+/* 2. Absent: Red Outline Box */
+.cal-day-cell.status-absent .cal-day-inner {
+  border: 1.5px solid #EF4444;
+  color: #DC2626;
+  background: #FEF2F2;
+}
+
+/* 3. Leave: Amber Outline Box */
+.cal-day-cell.status-leave .cal-day-inner {
+  border: 1.5px solid #F59E0B;
+  color: #D97706;
+  background: #FFFBEB;
+}
+
+/* 4. Weekly Off: Blue Outline Box */
+.cal-day-cell.status-weekoff .cal-day-inner {
+  border: 1.5px solid #3B82F6;
+  color: #2563EB;
+  background: #EFF6FF;
+}
+
+/* 5. Holiday: Purple Outline Box ("in calender mark holidays with purple color") */
+.cal-day-cell.status-holiday .cal-day-inner {
+  border: 1.5px solid #8B5CF6;
+  color: #7C3AED;
+  background: #F5F3FF;
+}
+
+/* 6. Upcoming: Blank only date no border with color */
+.cal-day-cell.status-upcoming .cal-day-inner {
+  border: none;
+  background: transparent;
+  color: #334155;
+  font-weight: 500;
+}
+
+/* Today indicator when not marked yet */
+.cal-day-cell.is-today:not(.status-present):not(.status-absent):not(.status-holiday) .cal-day-inner {
+  background: #E2E8F0;
+  color: #0F172A;
+  font-weight: 700;
+}
+
+/* Muted outside-month cells */
+.cal-day-cell.cal-muted .cal-day-inner {
+  border: none !important;
+  background: transparent !important;
+  color: #CBD5E1 !important;
+  font-weight: 400 !important;
 }
 
 .cal-legend {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 10px;
+  padding-top: 6px;
   border-top: 1px solid #F1F5F9;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
+  flex-wrap: nowrap;
+  gap: 3px;
+  margin-top: auto;
 }
 
 .cal-legend span {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  gap: 3px;
+  white-space: nowrap;
 }
 
 .cal-legend .leg-dot {
   width: 6px;
   height: 6px;
-  margin-right: 5px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
 }
+
 
 /* ══════════════════════════ BOTTOM MOTIVATIONAL BANNER ══════════════════════════ */
 .bottom-motivational-banner {

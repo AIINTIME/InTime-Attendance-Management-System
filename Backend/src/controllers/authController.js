@@ -2,8 +2,7 @@ const { body, validationResult } = require("express-validator");
 const authService = require("../services/authService");
 const { ApiError } = require("../middleware/errorMiddleware");
 const { accessCookieOptions, refreshCookieOptions } = require("../utils/jwt");
-const Employee = require("../models/Employee");
-const Admin = require("../models/Admin");
+const prisma = require("../config/prisma");
 
 function assertValid(req) {
   const errors = validationResult(req);
@@ -77,11 +76,11 @@ async function logout(req, res) {
 async function me(req, res, next) {
   try {
     if (req.user.role === "employee") {
-      const employee = await Employee.findById(req.user.id);
+      const employee = await prisma.employee.findUnique({ where: { id: req.user.id } });
       if (!employee) throw new ApiError(401, "Account not found.", "NOT_FOUND");
       return res.json({ success: true, message: "OK", data: { user: authService.toPublicEmployee(employee) } });
     }
-    const admin = await Admin.findById(req.user.id);
+    const admin = await prisma.admin.findUnique({ where: { id: req.user.id } });
     if (!admin) throw new ApiError(401, "Account not found.", "NOT_FOUND");
     res.json({ success: true, message: "OK", data: { user: authService.toPublicAdmin(admin) } });
   } catch (err) {

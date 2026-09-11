@@ -1,5 +1,7 @@
-const OrgSettings = require("../models/OrgSettings");
+const prisma = require("../config/prisma");
 const env = require("../config/env");
+
+const SETTINGS_KEY = "org";
 
 // Cached in memory so hot paths (every check-in/check-out) don't hit the
 // DB. Invalidated on every write from the Settings page; a cold cache also
@@ -19,41 +21,47 @@ function defaults() {
     lateGraceMinutes: 15,
     veryLateGraceMinutes: 30,
     halfDayRules: [
-      { dayOfWeek: 6, occurrence: 1 },
-      { dayOfWeek: 6, occurrence: 3 },
+      { dayOfWeek: 6, occurrence: 2 },
+      { dayOfWeek: 6, occurrence: 4 },
+    ],
+    holidays: [
+      { date: "2026-01-26", name: "Republic Day", description: "National Holiday" },
+      { date: "2026-03-14", name: "Holi", description: "Festival" },
+      { date: "2026-03-29", name: "Good Friday", description: "Restricted Holiday" },
+      { date: "2026-04-10", name: "Id-ul-Fitr", description: "Festival" },
+      { date: "2026-08-15", name: "Independence Day", description: "National Holiday" },
     ],
   };
 }
 
 /**
- * Returns the current org settings, creating the singleton document (seeded
+ * Returns the current org settings, creating the singleton row (seeded
  * from the .env defaults that used to be the only source of truth) the
  * first time it's ever read.
  */
 async function getSettings() {
   if (cached) return cached;
 
-  let doc = await OrgSettings.findOne({ key: OrgSettings.SETTINGS_KEY });
+  let doc = await prisma.orgSettings.findUnique({ where: { key: SETTINGS_KEY } });
   if (!doc) {
-    doc = await OrgSettings.create({ key: OrgSettings.SETTINGS_KEY, ...defaults() });
+    doc = await prisma.orgSettings.create({ data: { key: SETTINGS_KEY, ...defaults() } });
   }
-  cached = doc.toObject();
+  cached = doc;
   return cached;
 }
 
 async function updateSettings(patch) {
   // Make sure the singleton exists (with every required field filled in)
-  // before patching it -- an upsert here could otherwise create a document
+  // before patching it -- an upsert here could otherwise create a row
   // missing whatever required fields weren't part of this particular patch.
   await getSettings();
 
-  const doc = await OrgSettings.findOneAndUpdate(
-    { key: OrgSettings.SETTINGS_KEY },
-    { $set: patch },
-    { new: true, runValidators: true }
-  );
-  cached = doc.toObject();
+  const doc = await prisma.orgSettings.update({
+    where: { key: SETTINGS_KEY },
+    data: patch,
+  });
+  cached = doc;
   return cached;
 }
 
-module.exports = { getSettings, updateSettings };
+module.exports = { getSettings, updateSettings, SETTINGS_KEY };

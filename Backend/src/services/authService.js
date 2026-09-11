@@ -1,5 +1,4 @@
-const Employee = require("../models/Employee");
-const Admin = require("../models/Admin");
+const prisma = require("../config/prisma");
 const { comparePassword } = require("../utils/password");
 const { ApiError } = require("../middleware/errorMiddleware");
 const {
@@ -11,7 +10,7 @@ const { getCurrentAuthWeekKey, isAuthWeekValid } = require("../utils/authWeek");
 
 function toPublicEmployee(employee) {
   return {
-    id: employee._id,
+    id: employee.id,
     role: "employee",
     employeeId: employee.employeeId,
     name: employee.name,
@@ -29,7 +28,7 @@ function toPublicEmployee(employee) {
 
 function toPublicAdmin(admin) {
   return {
-    id: admin._id,
+    id: admin.id,
     role: "admin",
     name: admin.name,
     email: admin.email,
@@ -39,7 +38,7 @@ function toPublicAdmin(admin) {
 }
 
 async function loginEmployee(email, password) {
-  const employee = await Employee.findOne({ email: email.toLowerCase() }).select("+passwordHash");
+  const employee = await prisma.employee.findUnique({ where: { email: email.toLowerCase() } });
   if (!employee) {
     throw new ApiError(401, "Invalid email or password.", "INVALID_CREDENTIALS");
   }
@@ -56,9 +55,9 @@ async function loginEmployee(email, password) {
   // the refresh token stays valid only within that same week (spec section 14).
   const authWeek = getCurrentAuthWeekKey(new Date()) || weekKeyEvenOnSunday();
 
-  const accessToken = signAccessToken({ sub: employee._id.toString(), role: "employee" });
+  const accessToken = signAccessToken({ sub: employee.id, role: "employee" });
   const refreshToken = signRefreshToken({
-    sub: employee._id.toString(),
+    sub: employee.id,
     role: "employee",
     authWeek,
   });
@@ -78,7 +77,7 @@ function weekKeyEvenOnSunday() {
 }
 
 async function loginAdmin(email, password) {
-  const admin = await Admin.findOne({ email: email.toLowerCase() }).select("+passwordHash");
+  const admin = await prisma.admin.findUnique({ where: { email: email.toLowerCase() } });
   if (!admin) {
     throw new ApiError(401, "Invalid email or password.", "INVALID_CREDENTIALS");
   }
@@ -88,8 +87,8 @@ async function loginAdmin(email, password) {
     throw new ApiError(401, "Invalid email or password.", "INVALID_CREDENTIALS");
   }
 
-  const accessToken = signAccessToken({ sub: admin._id.toString(), role: "admin" });
-  const refreshToken = signRefreshToken({ sub: admin._id.toString(), role: "admin" });
+  const accessToken = signAccessToken({ sub: admin.id, role: "admin" });
+  const refreshToken = signRefreshToken({ sub: admin.id, role: "admin" });
 
   return { accessToken, refreshToken, user: toPublicAdmin(admin) };
 }
@@ -115,14 +114,14 @@ async function refreshSession(refreshTokenCookie) {
       );
     }
 
-    const employee = await Employee.findById(payload.sub);
+    const employee = await prisma.employee.findUnique({ where: { id: payload.sub } });
     if (!employee || !employee.isActive) {
       throw new ApiError(401, "Please log in again.", "ACCOUNT_UNAVAILABLE");
     }
 
-    const accessToken = signAccessToken({ sub: employee._id.toString(), role: "employee" });
+    const accessToken = signAccessToken({ sub: employee.id, role: "employee" });
     const refreshToken = signRefreshToken({
-      sub: employee._id.toString(),
+      sub: employee.id,
       role: "employee",
       authWeek: payload.authWeek,
     });
@@ -131,12 +130,12 @@ async function refreshSession(refreshTokenCookie) {
   }
 
   if (payload.role === "admin") {
-    const admin = await Admin.findById(payload.sub);
+    const admin = await prisma.admin.findUnique({ where: { id: payload.sub } });
     if (!admin) {
       throw new ApiError(401, "Please log in again.", "ACCOUNT_UNAVAILABLE");
     }
-    const accessToken = signAccessToken({ sub: admin._id.toString(), role: "admin" });
-    const refreshToken = signRefreshToken({ sub: admin._id.toString(), role: "admin" });
+    const accessToken = signAccessToken({ sub: admin.id, role: "admin" });
+    const refreshToken = signRefreshToken({ sub: admin.id, role: "admin" });
     return { accessToken, refreshToken, user: toPublicAdmin(admin) };
   }
 

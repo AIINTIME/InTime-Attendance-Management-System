@@ -1,6 +1,6 @@
 const passkeyService = require("../services/passkeyService");
 const { signPasskeyTicket } = require("../utils/jwt");
-const PasskeyCredential = require("../models/PasskeyCredential");
+const prisma = require("../config/prisma");
 
 async function registrationOptions(req, res, next) {
   try {
@@ -36,7 +36,7 @@ async function authenticationVerify(req, res, next) {
     await passkeyService.verifyAuthentication(req.employee, response, req.headers.origin);
     // Short-lived ticket the client attaches to the attendance request that
     // follows, proving passkey verification actually happened server-side.
-    const passkeyTicket = signPasskeyTicket(req.employee._id.toString());
+    const passkeyTicket = signPasskeyTicket(req.employee.id.toString());
     res.json({ success: true, message: "Identity verified", data: { passkeyTicket } });
   } catch (err) {
     next(err);
@@ -45,14 +45,15 @@ async function authenticationVerify(req, res, next) {
 
 async function listCredentials(req, res, next) {
   try {
-    const credentials = await PasskeyCredential.find({ employeeId: req.employee._id }).sort({
-      createdAt: -1,
+    const credentials = await prisma.passkeyCredential.findMany({
+      where: { employeeId: req.employee.id },
+      orderBy: { createdAt: "desc" },
     });
     res.json({
       success: true,
       message: "OK",
       data: credentials.map((c) => ({
-        id: c._id,
+        id: c.id,
         nickname: c.nickname,
         deviceType: c.deviceType,
         createdAt: c.createdAt,

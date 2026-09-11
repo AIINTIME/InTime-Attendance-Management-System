@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id                String   @id @default(cuid())
+  name              String
+  email             String   @unique
+  passwordHash      String
+  role              String   @default("admin")
+  designation       String   @default("senior hr")
+  profilePhoto      String   @default("")
+  mustChangePassword Boolean @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Employee {
+  id                  String    @id @default(cuid())
+  employeeId          String    @unique
+  name                String
+  email               String    @unique
+  passwordHash        String
+  department          String
+  designation         String
+  profilePhoto        String    @default("")
+  phone               String    @default("")
+  dateOfBirth         DateTime?
+  gender              String    @default("")
+  passkeyRegistered   Boolean   @default(false)
+  mustChangePassword  Boolean   @default(false)
+  isActive            Boolean   @default(true)
+  role                String    @default("employee")
+  currentChallenge    String?
+  currentChallengeAt  DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  attendances         Attendance[]
+  passkeyCredentials  PasskeyCredential[]
+
+  @@index([department])
+}
+
+model Attendance {
+  id                        String    @id @default(cuid())
+  employeeId                String
+  employee                  Employee  @relation(fields: [employeeId], references: [id])
+
+  workingDateKey            String
+  date                      DateTime
+
+  loginType                 String
+
+  checkInTime               DateTime
+  checkOutTime              DateTime?
+
+  reason                    String    @default("")
+
+  latitude                  Float
+  longitude                 Float
+  locationAccuracy          Float?
+
+  officeDistanceMeters      Float?
+
+  checkOutLatitude          Float?
+  checkOutLongitude         Float?
+  checkOutLocationAccuracy  Float?
+  checkOutDistanceMeters    Float?
+
+  latenessStatus            String
+  insufficientHours         Boolean   @default(false)
+
+  totalWorkingMinutes       Int?
+
+  passkeyVerified           Boolean   @default(false)
+
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  @@unique([employeeId, workingDateKey])
+  @@index([workingDateKey, loginType])
+}
+
+model OrgSettings {
+  id                     String   @id @default(cuid())
+  key                    String   @unique @default("org")
+
+  officeAddress          String   @default("Salt Lake, Kolkata, West Bengal, India")
+  officeLatitude         Float
+  officeLongitude        Float
+  officeRadiusMeters     Float
+
+  checkInTime            String
+  checkOutTime           String
+
+  loginBufferMinutes     Float
+  slightLateGraceMinutes Int      @default(5)
+  lateGraceMinutes       Int      @default(15)
+  veryLateGraceMinutes   Int      @default(30)
+
+  // Array of { dayOfWeek: 0-6, occurrence: 1-5 }
+  halfDayRules           Json     @default("[]")
+
+  // Array of { date: String, name: String, description: String }
+  holidays               Json     @default("[]")
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model PasskeyCredential {
+  id           String    @id @default(cuid())
+  employeeId   String
+  employee     Employee  @relation(fields: [employeeId], references: [id])
+
+  credentialId String    @unique
+  publicKey    String
+  counter      Int       @default(0)
+  transports   String[]  @default([])
+  deviceType   String    @default("")
+  backedUp     Boolean   @default(false)
+  nickname     String    @default("")
+  lastUsedAt   DateTime?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([employeeId])
+}

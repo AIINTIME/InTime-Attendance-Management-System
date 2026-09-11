@@ -23,7 +23,7 @@ import {
   MapPin,
   X,
 } from "lucide-react";
-import { getMyRecords } from "../../Services/attendanceService";
+import { getMyRecords, getWorkingDays } from "../../Services/attendanceService";
 import { formatDate, formatTime, formatMinutesAsHours } from "../../Utils/dateUtils";
 import { GOOGLE_MAPS_QUERY_URL } from "../../Utils/constants";
 import EmptyState from "../../Components/Common/EmptyState";
@@ -145,6 +145,15 @@ const MOCK_REPORT_DATA = {
    and lateness (On Time/Slight Late/Very Late) plus an insufficient-hours flag.
 ══════════════════════════════════════════════════════════════════════════════ */
 
+// Formats a KPI card value as "count/total" once a real working-day total
+// is known (a specific month is selected); otherwise just the plain count,
+// same fallback the cards used before a total was available at all.
+function outOf(count, total) {
+  if (count == null) return undefined;
+  if (total == null) return count;
+  return `${count}/${Number(total.toFixed(1))}`;
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    Main Component: AttendanceRecords (Report Page)
 ══════════════════════════════════════════════════════════════════════════════ */
@@ -223,22 +232,68 @@ export default function AttendanceRecords() {
       setData({ ...result, records });
       const present = records.length;
 
-      // "Present" / "Absent" only mean something against a single month --
-      // there's no leave/holiday calendar in this app, so "days" here means
-      // calendar days (elapsed so far, for the current month), not working days.
-      let daysElapsed;
+      // "Present" / "Absent" only mean something against a single month.
+      // Present/In Office/Remote are measured against the org's real
+      // *total* working-day count for the whole selected month (Sundays
+      // off; half-day Saturdays still count as a full day -- Settings
+      // page), backend-authoritative since halfDayRules live server-side.
+      // Absent, though, only counts working days that have *already
+      // happened* -- a future working day the employee hasn't reached yet
+      // isn't an absence, so it uses the elapsed-so-far count instead of
+      // the whole-month total (equal to the total for a fully past month,
+      // 0 for a future one).
+      let totalWorkingDays;
       let absent;
+      let workingSaturdays;
       if (year !== null && month !== null) {
-        const now = new Date();
-        const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
-        daysElapsed = isCurrentMonth ? now.getDate() : lastDay;
-        absent = Math.max(0, daysElapsed - present);
+        try {
+          const result = await getWorkingDays(year, month);
+          totalWorkingDays = result.totalWorkingDays;
+          workingSaturdays = result.workingSaturdays;
+
+          const now = new Date();
+          const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
+          if (isCurrentMonth) {
+            // Absent days from 1st to yesterday (days elapsed prior to today without attendance)
+            const pastDaysCount = Math.max(0, now.getDate() - 1);
+            const presentBeforeToday = records.filter(
+              (r) => new Date(r.date).getDate() < now.getDate()
+            ).length;
+            absent = Math.max(0, pastDaysCount - presentBeforeToday);
+          } else if (year < now.getFullYear() || (year === now.getFullYear() && month < now.getMonth() + 1)) {
+            // Past month: total working days minus attendances
+            absent = Math.max(0, result.totalWorkingDays - present);
+          } else {
+            // Future month
+            absent = 0;
+          }
+        } catch {
+          const now = new Date();
+          const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
+          totalWorkingDays = lastDay;
+          workingSaturdays = 2;
+          if (isCurrentMonth) {
+            const pastDaysCount = Math.max(0, now.getDate() - 1);
+            const presentBeforeToday = records.filter(
+              (r) => new Date(r.date).getDate() < now.getDate()
+            ).length;
+            absent = Math.max(0, pastDaysCount - presentBeforeToday);
+          } else {
+            absent = Math.max(
+              0,
+              (year < now.getFullYear() || (year === now.getFullYear() && month < now.getMonth() + 1)
+                ? lastDay
+                : 0) - present
+            );
+          }
+        }
       }
 
       setStats({
         present,
-        daysElapsed,
+        totalWorkingDays,
         absent,
+        workingSaturdays,
         office: records.filter((r) => r.loginType === "OFFICE").length,
         distance: records.filter((r) => r.loginType === "DISTANCE").length,
         onTime: records.filter((r) => r.latenessStatus === "ON_TIME").length,
@@ -878,19 +933,35 @@ export default function AttendanceRecords() {
             {[
               {
                 label: "Present",
-                value: stats
-                  ? stats.daysElapsed != null
-                    ? `${stats.present}/${stats.daysElapsed}`
-                    : stats.present
-                  : undefined,
+                value: outOf(stats?.present, stats?.totalWorkingDays),
                 color: "cyan",
                 icon: ListChecks,
               },
-              { label: "In Office", value: stats?.office, color: "green", icon: Building },
-              { label: "Remote", value: stats?.distance, color: "blue", icon: Home },
+              {
+                label: "In Office",
+                value: outOf(
+                  stats?.office,
+                  stats?.totalWorkingDays != null && stats?.workingSaturdays != null
+                    ? stats.totalWorkingDays - stats.workingSaturdays
+                    : undefined
+                ),
+                color: "green",
+                icon: Building,
+              },
+              {
+                label: "Remote",
+                value: outOf(stats?.distance, stats?.workingSaturdays),
+                color: "blue",
+                icon: Home,
+              },
               { label: "On Time", value: stats?.onTime, color: "purple", icon: CheckCircle2 },
               { label: "Late", value: stats?.late, color: "amber", icon: Clock },
-              { label: "Absent", value: stats?.absent, color: "red", icon: AlertCircle },
+              {
+                label: "Absent",
+                value: stats?.absent != null ? Number(stats.absent.toFixed(1)) : undefined,
+                color: "red",
+                icon: AlertCircle,
+              },
             ].map((kpi, idx) => {
               const Icon = kpi.icon;
               return (

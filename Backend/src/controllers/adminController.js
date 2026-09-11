@@ -1,13 +1,11 @@
 const { body, query, param, validationResult } = require("express-validator");
-const Employee = require("../models/Employee");
-const Admin = require("../models/Admin");
-const Attendance = require("../models/Attendance");
-const PasskeyCredential = require("../models/PasskeyCredential");
+const prisma = require("../config/prisma");
 const { ApiError } = require("../middleware/errorMiddleware");
 const { hashPassword, comparePassword } = require("../utils/password");
 const { getWorkingDateKey } = require("../utils/timezone");
 const attendanceService = require("../services/attendanceService");
 const { toPublicAdmin } = require("../services/authService");
+const { sanitizeEmployee } = require("../utils/serialize");
 
 function assertValid(req) {
   const errors = validationResult(req);
@@ -25,7 +23,10 @@ const DEFAULT_TEMPORARY_PASSWORD = "Welcome@26INT";
 // loop in createEmployee, this stays correct even if two admins create an
 // employee at the same moment.
 async function generateNextEmployeeId() {
-  const employees = await Employee.find({ employeeId: /^EMP\d+$/i }, { employeeId: 1 }).lean();
+  const employees = await prisma.employee.findMany({
+    where: { employeeId: { startsWith: "EMP" } },
+    select: { employeeId: true },
+  });
   let max = 0;
   for (const { employeeId } of employees) {
     const match = /^EMP(\d+)$/i.exec(employeeId);
@@ -45,51 +46,20 @@ async function getDashboard(req, res, next) {
   try {
     const todayKey = getWorkingDateKey(new Date());
 
-    const totalEmployees = await Employee.countDocuments({ isActive: true });
+    const totalEmployees = await prisma.employee.count({ where: { isActive: true } });
 
-    const [statusCounts] = await Attendance.aggregate([
-      { $match: { workingDateKey: todayKey } },
-      {
-        $group: {
-          _id: null,
-          present: { $sum: 1 },
-          office: { $sum: { $cond: [{ $eq: ["$loginType", "OFFICE"] }, 1, 0] } },
-          distance: { $sum: { $cond: [{ $eq: ["$loginType", "DISTANCE"] }, 1, 0] } },
-          onTime: { $sum: { $cond: [{ $eq: ["$latenessStatus", "ON_TIME"] }, 1, 0] } },
-          slightLate: { $sum: { $cond: [{ $eq: ["$latenessStatus", "SLIGHT_LATE"] }, 1, 0] } },
-          veryLate: { $sum: { $cond: [{ $eq: ["$latenessStatus", "VERY_LATE"] }, 1, 0] } },
-          insufficientHours: { $sum: { $cond: ["$insufficientHours", 1, 0] } },
-        },
+    const todaysAttendance = await prisma.attendance.findMany({
+      where: { workingDateKey: todayKey },
+      select: {
+        loginType: true,
+        latenessStatus: true,
+        insufficientHours: true,
+        employee: { select: { department: true } },
       },
-    ]);
+    });
 
-    const fourteenDaysAgo = new Date();
-    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 13);
-    const fourteenDaysAgoKey = getWorkingDateKey(fourteenDaysAgo);
-
-    const dailyTrend = await Attendance.aggregate([
-      { $match: { workingDateKey: { $gte: fourteenDaysAgoKey } } },
-      { $group: { _id: "$workingDateKey", count: { $sum: 1 } } },
-      { $sort: { _id: 1 } },
-    ]);
-
-    const departmentBreakdown = await Attendance.aggregate([
-      { $match: { workingDateKey: todayKey } },
-      {
-        $lookup: {
-          from: "employees",
-          localField: "employeeId",
-          foreignField: "_id",
-          as: "employee",
-        },
-      },
-      { $unwind: "$employee" },
-      { $group: { _id: "$employee.department", count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-    ]);
-
-    const stats = statusCounts || {
-      present: 0,
+    const stats = {
+      present: todaysAttendance.length,
       office: 0,
       distance: 0,
       onTime: 0,
@@ -97,6 +67,37 @@ async function getDashboard(req, res, next) {
       veryLate: 0,
       insufficientHours: 0,
     };
+    const departmentCounts = new Map();
+    for (const record of todaysAttendance) {
+      if (record.loginType === "OFFICE") stats.office += 1;
+      if (record.loginType === "DISTANCE") stats.distance += 1;
+      if (record.latenessStatus === "ON_TIME") stats.onTime += 1;
+      if (record.latenessStatus === "SLIGHT_LATE") stats.slightLate += 1;
+      if (record.latenessStatus === "VERY_LATE") stats.veryLate += 1;
+      if (record.insufficientHours) stats.insufficientHours += 1;
+
+      const dept = record.employee?.department || "Unassigned";
+      departmentCounts.set(dept, (departmentCounts.get(dept) || 0) + 1);
+    }
+    const departmentBreakdown = Array.from(departmentCounts.entries())
+      .map(([department, count]) => ({ department, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 13);
+    const fourteenDaysAgoKey = getWorkingDateKey(fourteenDaysAgo);
+
+    const trendRows = await prisma.attendance.findMany({
+      where: { workingDateKey: { gte: fourteenDaysAgoKey } },
+      select: { workingDateKey: true },
+    });
+    const trendCounts = new Map();
+    for (const { workingDateKey } of trendRows) {
+      trendCounts.set(workingDateKey, (trendCounts.get(workingDateKey) || 0) + 1);
+    }
+    const dailyTrend = Array.from(trendCounts.entries())
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
     res.json({
       success: true,
@@ -110,11 +111,8 @@ async function getDashboard(req, res, next) {
         slightLate: stats.slightLate,
         veryLate: stats.veryLate,
         insufficientHours: stats.insufficientHours,
-        dailyTrend: dailyTrend.map((d) => ({ date: d._id, count: d.count })),
-        departmentBreakdown: departmentBreakdown.map((d) => ({
-          department: d._id || "Unassigned",
-          count: d.count,
-        })),
+        dailyTrend,
+        departmentBreakdown,
       },
     });
   } catch (err) {
@@ -137,24 +135,36 @@ async function listEmployees(req, res, next) {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 20;
 
-    const filter = {};
+    const where = {};
     if (req.query.search) {
-      const regex = new RegExp(req.query.search.trim(), "i");
-      filter.$or = [{ name: regex }, { email: regex }, { employeeId: regex }];
+      const search = req.query.search.trim();
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { employeeId: { contains: search, mode: "insensitive" } },
+      ];
     }
-    if (req.query.department) filter.department = req.query.department;
-    if (req.query.isActive !== undefined) filter.isActive = req.query.isActive === "true";
+    if (req.query.department) where.department = req.query.department;
+    if (req.query.isActive !== undefined) where.isActive = req.query.isActive === "true";
 
-    const total = await Employee.countDocuments(filter);
-    const employees = await Employee.find(filter)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
+    const total = await prisma.employee.count({ where });
+    const employees = await prisma.employee.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
 
     res.json({
       success: true,
       message: "OK",
-      data: { employees, total, page, limit, totalPages: Math.ceil(total / limit) || 1 },
+      data: {
+        employees: employees.map(sanitizeEmployee),
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
     });
   } catch (err) {
     next(err);
@@ -174,7 +184,7 @@ async function createEmployee(req, res, next) {
     assertValid(req);
     const { name, email, department, designation, phone } = req.body;
 
-    const existing = await Employee.findOne({ email: email.toLowerCase() });
+    const existing = await prisma.employee.findUnique({ where: { email: email.toLowerCase() } });
     if (existing) {
       throw new ApiError(409, "An employee with this email already exists.", "EMPLOYEE_EXISTS");
     }
@@ -186,19 +196,21 @@ async function createEmployee(req, res, next) {
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       const employeeId = await generateNextEmployeeId();
       try {
-        employee = await Employee.create({
-          employeeId,
-          name,
-          email,
-          department,
-          designation,
-          phone: phone || "",
-          passwordHash,
-          mustChangePassword: true,
+        employee = await prisma.employee.create({
+          data: {
+            employeeId,
+            name,
+            email: email.toLowerCase(),
+            department,
+            designation,
+            phone: phone || "",
+            passwordHash,
+            mustChangePassword: true,
+          },
         });
         break;
       } catch (err) {
-        const isDuplicateId = err.code === 11000 && err.keyPattern?.employeeId;
+        const isDuplicateId = err.code === "P2002" && err.meta?.target?.includes("employeeId");
         if (isDuplicateId && attempt < MAX_ATTEMPTS) continue;
         throw err;
       }
@@ -207,7 +219,7 @@ async function createEmployee(req, res, next) {
     res.status(201).json({
       success: true,
       message: "Employee created",
-      data: { employee, temporaryPassword: DEFAULT_TEMPORARY_PASSWORD },
+      data: { employee: sanitizeEmployee(employee), temporaryPassword: DEFAULT_TEMPORARY_PASSWORD },
     });
   } catch (err) {
     next(err);
@@ -216,38 +228,31 @@ async function createEmployee(req, res, next) {
 
 async function getEmployeeById(req, res, next) {
   try {
-    const employee = await Employee.findById(req.params.id);
+    const employee = await prisma.employee.findUnique({ where: { id: req.params.id } });
     if (!employee) throw new ApiError(404, "Employee not found.", "NOT_FOUND");
 
-    const credentialsCount = await PasskeyCredential.countDocuments({ employeeId: employee._id });
+    const credentialsCount = await prisma.passkeyCredential.count({ where: { employeeId: employee.id } });
 
-    const totalRecords = await Attendance.countDocuments({ employeeId: employee._id });
-    const [statusCounts] = await Attendance.aggregate([
-      { $match: { employeeId: employee._id } },
-      {
-        $group: {
-          _id: null,
-          onTime: { $sum: { $cond: [{ $eq: ["$latenessStatus", "ON_TIME"] }, 1, 0] } },
-          slightLate: { $sum: { $cond: [{ $eq: ["$latenessStatus", "SLIGHT_LATE"] }, 1, 0] } },
-          veryLate: { $sum: { $cond: [{ $eq: ["$latenessStatus", "VERY_LATE"] }, 1, 0] } },
-          insufficientHours: { $sum: { $cond: ["$insufficientHours", 1, 0] } },
-        },
-      },
-    ]);
+    const totalRecords = await prisma.attendance.count({ where: { employeeId: employee.id } });
+    const statusRows = await prisma.attendance.findMany({
+      where: { employeeId: employee.id },
+      select: { latenessStatus: true, insufficientHours: true },
+    });
+    const statusCounts = { onTime: 0, slightLate: 0, veryLate: 0, insufficientHours: 0 };
+    for (const row of statusRows) {
+      if (row.latenessStatus === "ON_TIME") statusCounts.onTime += 1;
+      if (row.latenessStatus === "SLIGHT_LATE") statusCounts.slightLate += 1;
+      if (row.latenessStatus === "VERY_LATE") statusCounts.veryLate += 1;
+      if (row.insufficientHours) statusCounts.insufficientHours += 1;
+    }
 
     res.json({
       success: true,
       message: "OK",
       data: {
-        employee,
+        employee: sanitizeEmployee(employee),
         passkeyCredentialsCount: credentialsCount,
-        attendanceStats: {
-          totalRecords,
-          onTime: statusCounts?.onTime || 0,
-          slightLate: statusCounts?.slightLate || 0,
-          veryLate: statusCounts?.veryLate || 0,
-          insufficientHours: statusCounts?.insufficientHours || 0,
-        },
+        attendanceStats: { totalRecords, ...statusCounts },
       },
     });
   } catch (err) {
@@ -265,17 +270,19 @@ const updateEmployeeValidators = [
 async function updateEmployee(req, res, next) {
   try {
     assertValid(req);
-    const employee = await Employee.findById(req.params.id);
-    if (!employee) throw new ApiError(404, "Employee not found.", "NOT_FOUND");
+    const existing = await prisma.employee.findUnique({ where: { id: req.params.id } });
+    if (!existing) throw new ApiError(404, "Employee not found.", "NOT_FOUND");
 
     const { name, department, designation, phone } = req.body;
-    if (name) employee.name = name;
-    if (department) employee.department = department;
-    if (designation) employee.designation = designation;
-    if (phone !== undefined) employee.phone = phone;
-    await employee.save();
+    const data = {};
+    if (name) data.name = name;
+    if (department) data.department = department;
+    if (designation) data.designation = designation;
+    if (phone !== undefined) data.phone = phone;
 
-    res.json({ success: true, message: "Employee updated", data: { employee } });
+    const employee = await prisma.employee.update({ where: { id: existing.id }, data });
+
+    res.json({ success: true, message: "Employee updated", data: { employee: sanitizeEmployee(employee) } });
   } catch (err) {
     next(err);
   }
@@ -291,13 +298,15 @@ const resetPasswordValidators = [
 async function resetEmployeePassword(req, res, next) {
   try {
     assertValid(req);
-    const employee = await Employee.findById(req.params.id);
-    if (!employee) throw new ApiError(404, "Employee not found.", "NOT_FOUND");
+    const existing = await prisma.employee.findUnique({ where: { id: req.params.id } });
+    if (!existing) throw new ApiError(404, "Employee not found.", "NOT_FOUND");
 
     const temporaryPassword = req.body.temporaryPassword || DEFAULT_TEMPORARY_PASSWORD;
-    employee.passwordHash = await hashPassword(temporaryPassword);
-    employee.mustChangePassword = true;
-    await employee.save();
+    const passwordHash = await hashPassword(temporaryPassword);
+    await prisma.employee.update({
+      where: { id: existing.id },
+      data: { passwordHash, mustChangePassword: true },
+    });
 
     res.json({ success: true, message: "Password reset successfully", data: { temporaryPassword } });
   } catch (err) {
@@ -310,13 +319,15 @@ const statusValidators = [body("isActive").isBoolean().withMessage("isActive mus
 async function setEmployeeStatus(req, res, next) {
   try {
     assertValid(req);
-    const employee = await Employee.findById(req.params.id);
-    if (!employee) throw new ApiError(404, "Employee not found.", "NOT_FOUND");
+    const existing = await prisma.employee.findUnique({ where: { id: req.params.id } });
+    if (!existing) throw new ApiError(404, "Employee not found.", "NOT_FOUND");
 
-    employee.isActive = req.body.isActive;
-    await employee.save();
+    const employee = await prisma.employee.update({
+      where: { id: existing.id },
+      data: { isActive: req.body.isActive },
+    });
 
-    res.json({ success: true, message: "Employee status updated", data: { employee } });
+    res.json({ success: true, message: "Employee status updated", data: { employee: sanitizeEmployee(employee) } });
   } catch (err) {
     next(err);
   }
@@ -358,7 +369,7 @@ async function listAttendance(req, res, next) {
   }
 }
 
-const employeeAttendanceHistoryValidators = [param("id").isMongoId()];
+const employeeAttendanceHistoryValidators = [param("id").isString().isLength({ min: 1 })];
 
 async function getEmployeeAttendanceHistory(req, res, next) {
   try {
@@ -400,23 +411,26 @@ const updateProfileValidators = [
 async function updateProfile(req, res, next) {
   try {
     assertValid(req);
-    if (req.body.name) req.admin.name = req.body.name.trim();
-    if (req.body.designation !== undefined) req.admin.designation = req.body.designation.trim();
+    const data = {};
+    if (req.body.name) data.name = req.body.name.trim();
+    if (req.body.designation !== undefined) data.designation = req.body.designation.trim();
     if (req.body.email) {
       const newEmail = req.body.email.toLowerCase().trim();
       if (newEmail !== req.admin.email.toLowerCase()) {
-        const existing = await Admin.findOne({ email: newEmail, _id: { $ne: req.admin._id } });
+        const existing = await prisma.admin.findFirst({
+          where: { email: newEmail, NOT: { id: req.admin.id } },
+        });
         if (existing) {
           throw new ApiError(409, "Email is already in use by another admin.", "EMAIL_IN_USE");
         }
-        req.admin.email = newEmail;
+        data.email = newEmail;
       }
     }
     if (req.body.profilePhoto !== undefined) {
-      req.admin.profilePhoto = req.body.profilePhoto;
+      data.profilePhoto = req.body.profilePhoto;
     }
-    await req.admin.save();
-    res.json({ success: true, message: "Profile updated", data: { user: toPublicAdmin(req.admin) } });
+    const admin = await prisma.admin.update({ where: { id: req.admin.id }, data });
+    res.json({ success: true, message: "Profile updated", data: { user: toPublicAdmin(admin) } });
   } catch (err) {
     next(err);
   }
@@ -433,13 +447,13 @@ const changeOwnPasswordValidators = [
 async function changeOwnPassword(req, res, next) {
   try {
     assertValid(req);
-    const admin = await Admin.findById(req.admin._id).select("+passwordHash");
+    const admin = await prisma.admin.findUnique({ where: { id: req.admin.id } });
     const valid = await comparePassword(req.body.currentPassword, admin.passwordHash);
     if (!valid) {
       throw new ApiError(401, "Current password is incorrect.", "INVALID_CURRENT_PASSWORD");
     }
-    admin.passwordHash = await hashPassword(req.body.newPassword);
-    await admin.save();
+    const passwordHash = await hashPassword(req.body.newPassword);
+    await prisma.admin.update({ where: { id: admin.id }, data: { passwordHash } });
     res.json({ success: true, message: "Password changed successfully" });
   } catch (err) {
     next(err);
@@ -451,12 +465,14 @@ async function uploadProfilePhoto(req, res, next) {
     if (!req.uploadedFilePath) {
       throw new ApiError(422, "A valid image file is required.", "NO_FILE");
     }
-    req.admin.profilePhoto = req.uploadedFilePath;
-    await req.admin.save();
+    const admin = await prisma.admin.update({
+      where: { id: req.admin.id },
+      data: { profilePhoto: req.uploadedFilePath },
+    });
     res.json({
       success: true,
       message: "Profile photo updated",
-      data: { profilePhoto: req.admin.profilePhoto, user: toPublicAdmin(req.admin) },
+      data: { profilePhoto: admin.profilePhoto, user: toPublicAdmin(admin) },
     });
   } catch (err) {
     next(err);
@@ -465,12 +481,14 @@ async function uploadProfilePhoto(req, res, next) {
 
 async function deleteProfilePhoto(req, res, next) {
   try {
-    req.admin.profilePhoto = "";
-    await req.admin.save();
+    const admin = await prisma.admin.update({
+      where: { id: req.admin.id },
+      data: { profilePhoto: "" },
+    });
     res.json({
       success: true,
       message: "Profile photo removed",
-      data: { profilePhoto: "", user: toPublicAdmin(req.admin) },
+      data: { profilePhoto: "", user: toPublicAdmin(admin) },
     });
   } catch (err) {
     next(err);

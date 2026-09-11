@@ -12,7 +12,7 @@ const env = {
   // local project's server also bound to it.
   PORT: Number(required("PORT", 5055)),
 
-  MONGODB_URI: required("MONGODB_URI", ""),
+  DATABASE_URL: required("DATABASE_URL", ""),
 
   JWT_ACCESS_SECRET: required("JWT_ACCESS_SECRET", ""),
   JWT_REFRESH_SECRET: required("JWT_REFRESH_SECRET", ""),
@@ -53,7 +53,7 @@ const env = {
 
 if (env.NODE_ENV !== "test") {
   const missing = [];
-  if (!env.MONGODB_URI) missing.push("MONGODB_URI");
+  if (!env.DATABASE_URL) missing.push("DATABASE_URL");
   if (!env.JWT_ACCESS_SECRET) missing.push("JWT_ACCESS_SECRET");
   if (!env.JWT_REFRESH_SECRET) missing.push("JWT_REFRESH_SECRET");
   if (missing.length) {

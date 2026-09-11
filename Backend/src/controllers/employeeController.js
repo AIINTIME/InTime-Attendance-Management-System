@@ -1,5 +1,5 @@
 const { body, validationResult } = require("express-validator");
-const Employee = require("../models/Employee");
+const prisma = require("../config/prisma");
 const { ApiError } = require("../middleware/errorMiddleware");
 const { hashPassword, comparePassword } = require("../utils/password");
 const { toPublicEmployee } = require("../services/authService");
@@ -28,12 +28,14 @@ async function updateMe(req, res, next) {
   try {
     assertValid(req);
     const { name, phone, dateOfBirth, gender } = req.body;
-    if (name !== undefined) req.employee.name = name;
-    if (phone !== undefined) req.employee.phone = phone;
-    if (dateOfBirth !== undefined) req.employee.dateOfBirth = dateOfBirth;
-    if (gender !== undefined) req.employee.gender = gender;
-    await req.employee.save();
-    res.json({ success: true, message: "Profile updated", data: { user: toPublicEmployee(req.employee) } });
+    const data = {};
+    if (name !== undefined) data.name = name;
+    if (phone !== undefined) data.phone = phone;
+    if (dateOfBirth !== undefined) data.dateOfBirth = dateOfBirth;
+    if (gender !== undefined) data.gender = gender;
+
+    const employee = await prisma.employee.update({ where: { id: req.employee.id }, data });
+    res.json({ success: true, message: "Profile updated", data: { user: toPublicEmployee(employee) } });
   } catch (err) {
     next(err);
   }
@@ -52,15 +54,17 @@ async function changePassword(req, res, next) {
     assertValid(req);
     const { currentPassword, newPassword } = req.body;
 
-    const employee = await Employee.findById(req.employee._id).select("+passwordHash");
+    const employee = await prisma.employee.findUnique({ where: { id: req.employee.id } });
     const valid = await comparePassword(currentPassword, employee.passwordHash);
     if (!valid) {
       throw new ApiError(401, "Current password is incorrect.", "INVALID_CURRENT_PASSWORD");
     }
 
-    employee.passwordHash = await hashPassword(newPassword);
-    employee.mustChangePassword = false;
-    await employee.save();
+    const passwordHash = await hashPassword(newPassword);
+    await prisma.employee.update({
+      where: { id: employee.id },
+      data: { passwordHash, mustChangePassword: false },
+    });
 
     res.json({ success: true, message: "Password changed successfully" });
   } catch (err) {
@@ -75,8 +79,10 @@ async function uploadProfilePhoto(req, res, next) {
     }
 
     const previousPhoto = req.employee.profilePhoto;
-    req.employee.profilePhoto = req.uploadedFilePath;
-    await req.employee.save();
+    const employee = await prisma.employee.update({
+      where: { id: req.employee.id },
+      data: { profilePhoto: req.uploadedFilePath },
+    });
 
     if (previousPhoto && previousPhoto.startsWith("/uploads/profile/")) {
       const previousPath = path.join(__dirname, "..", previousPhoto.replace("/uploads/", "uploads/"));
@@ -86,7 +92,7 @@ async function uploadProfilePhoto(req, res, next) {
     res.json({
       success: true,
       message: "Profile photo updated",
-      data: { profilePhoto: req.employee.profilePhoto },
+      data: { profilePhoto: employee.profilePhoto },
     });
   } catch (err) {
     next(err);

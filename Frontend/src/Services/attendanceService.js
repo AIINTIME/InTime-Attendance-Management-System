@@ -42,3 +42,16 @@ export async function getMyRecords(params = {}) {
   const { data } = await api.get("/attendance/my-records", { params });
   return data.data;
 }
+
+// Real working-day count for a calendar month (Sundays excluded, admin-
+// configured half-day Saturdays counted as 0.5) -- backend-authoritative
+// since it depends on OrgSettings.halfDayRules.
+export async function getWorkingDays(year, month) {
+  const { data } = await api.get("/attendance/working-days", { params: { year, month } });
+  return data.data;
+}
+
+export async function getEmployeeSettings() {
+  const { data } = await api.get("/employees/settings");
+  return data.data.settings;
+}

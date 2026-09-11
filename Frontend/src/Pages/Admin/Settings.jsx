@@ -7,6 +7,7 @@ import {
   Timer,
   BarChart2,
   Calendar,
+  CalendarDays,
   Save,
   Info,
   X,
@@ -16,11 +17,99 @@ import {
   Sliders,
   Check,
   RotateCcw,
+  UploadCloud,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import { getOrgSettings, updateOrgSettings } from "../../Services/adminService";
 import { useToast } from "../../Context/ToastContext";
 import { extractErrorMessage } from "../../Utils/validation";
 import "../../Styles/Settings.css";
+
+function formatHolidayDate(dateStr) {
+  if (!dateStr) return "";
+  const trimmed = String(dateStr).trim();
+  if (/^\d{1,2}\s+[A-Za-z]{3}\s+\d{4}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const d = new Date(trimmed);
+  if (isNaN(d.getTime())) return trimmed;
+  const day = d.getDate();
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const month = months[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day} ${month} ${year}`;
+}
+
+function parseHolidaySpreadsheet(arrayBuffer) {
+  const data = new Uint8Array(arrayBuffer);
+  const workbook = XLSX.read(data, { type: "array", cellDates: true });
+  const firstSheetName = workbook.SheetNames[0];
+  if (!firstSheetName) return [];
+  const worksheet = workbook.Sheets[firstSheetName];
+  const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+  if (!rawRows || rawRows.length === 0) return [];
+
+  const rows = [];
+  const firstRow = (rawRows[0] || []).map((c) => String(c).trim().toLowerCase());
+  const startIndex = firstRow.some((c) => c.includes("date") || c.includes("holiday")) ? 1 : 0;
+
+  for (let i = startIndex; i < rawRows.length; i++) {
+    const row = rawRows[i];
+    if (!row || row.length < 2) continue;
+    const rawDate = row[0];
+    const name = String(row[1] || "").trim();
+    const description = String(row[2] || "").trim();
+
+    if (!rawDate || !name) continue;
+
+    let formattedDate = "";
+    if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
+      const day = rawDate.getUTCDate();
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const month = months[rawDate.getUTCMonth()];
+      const year = rawDate.getUTCFullYear();
+      formattedDate = `${day} ${month} ${year}`;
+    } else if (typeof rawDate === "number") {
+      const parsedDateObj = XLSX.SSF.parse_date_code(rawDate);
+      if (parsedDateObj) {
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        formattedDate = `${parsedDateObj.d} ${months[parsedDateObj.m - 1]} ${parsedDateObj.y}`;
+      } else {
+        formattedDate = String(rawDate).trim();
+      }
+    } else {
+      formattedDate = formatHolidayDate(String(rawDate).trim());
+    }
+
+    rows.push({
+      date: formattedDate,
+      name,
+      description,
+    });
+  }
+
+  return rows;
+}
+
+function downloadSampleExcel() {
+  const sampleData = [
+    ["Date", "Holiday Name", "Description"],
+    ["26 Jan 2026", "Republic Day", "National Holiday"],
+    ["14 Mar 2026", "Holi", "Festival"],
+    ["29 Mar 2026", "Good Friday", "Restricted Holiday"],
+    ["10 Apr 2026", "Id-ul-Fitr", "Festival"],
+    ["15 Aug 2026", "Independence Day", "National Holiday"],
+    ["02 Oct 2026", "Mahatma Gandhi Jayanti", "National Holiday"],
+    ["25 Dec 2026", "Christmas", "Festival"],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(sampleData);
+  ws["!cols"] = [{ wch: 18 }, { wch: 28 }, { wch: 26 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Holidays");
+  XLSX.writeFile(wb, "sample_holidays.xlsx");
+}
 
 const DEFAULT_OFFICE_COORDS = {
   latitude: 22.51238080138918,
@@ -77,6 +166,10 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [showCoordsModal, setShowCoordsModal] = useState(false);
 
+  const [savingHolidays, setSavingHolidays] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
+
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
 
@@ -103,8 +196,15 @@ export default function Settings() {
           lateGraceMinutes: Number(settings.lateGraceMinutes ?? 15),
           veryLateGraceMinutes: Number(settings.veryLateGraceMinutes ?? 30),
           halfDayRules: settings.halfDayRules || [
-            { dayOfWeek: 6, occurrence: 1 },
-            { dayOfWeek: 6, occurrence: 3 },
+            { dayOfWeek: 6, occurrence: 2 },
+            { dayOfWeek: 6, occurrence: 4 },
+          ],
+          holidays: settings.holidays || [
+            { date: "2026-01-26", name: "Republic Day", description: "National Holiday" },
+            { date: "2026-03-14", name: "Holi", description: "Festival" },
+            { date: "2026-03-29", name: "Good Friday", description: "Restricted Holiday" },
+            { date: "2026-04-10", name: "Id-ul-Fitr", description: "Festival" },
+            { date: "2026-08-15", name: "Independence Day", description: "National Holiday" },
           ],
         };
         setForm(initial);
@@ -143,8 +243,65 @@ export default function Settings() {
 
     if (formSaturdays !== savedSaturdays) return true;
 
+    const formHolidays = JSON.stringify(form.holidays || []);
+    const savedHolidays = JSON.stringify(savedForm.holidays || []);
+    if (formHolidays !== savedHolidays) return true;
+
     return false;
   }, [form, savedForm]);
+
+  const processHolidayFile = (file) => {
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    const isExcel = name.endsWith(".xlsx") || name.endsWith(".xls");
+    const isCsv = name.endsWith(".csv") || file.type === "text/csv";
+
+    if (!isExcel && !isCsv) {
+      toast.error("Please upload a valid Excel (.xlsx / .xls) or CSV file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const arrayBuffer = e.target.result;
+        const parsed = parseHolidaySpreadsheet(arrayBuffer);
+        if (!parsed || parsed.length === 0) {
+          toast.error("No valid holiday rows found. Format: Date, Holiday Name, Description");
+          return;
+        }
+        setForm((f) => ({ ...f, holidays: parsed }));
+        toast.success(`${parsed.length} holidays loaded from ${file.name}`);
+      } catch {
+        toast.error("Failed to parse Excel file. Please verify the format.");
+      }
+    };
+    reader.onerror = () => {
+      toast.error("Failed to read file.");
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleSaveHolidays = async () => {
+    if (savingHolidays) return;
+    setSavingHolidays(true);
+    try {
+      const updated = await updateOrgSettings({
+        holidays: form.holidays || [],
+      });
+      const newSaved = {
+        ...savedForm,
+        holidays: updated.holidays ?? form.holidays,
+      };
+      setForm((f) => ({ ...f, holidays: updated.holidays ?? f.holidays }));
+      setSavedForm(newSaved);
+      toast.success("Holidays set in calendar successfully!");
+    } catch (err) {
+      toast.error(extractErrorMessage(err, "Failed to save holidays."));
+    } finally {
+      setSavingHolidays(false);
+    }
+  };
 
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -406,6 +563,7 @@ export default function Settings() {
         lateGraceMinutes: Number(form.lateGraceMinutes || 15),
         veryLateGraceMinutes: Number(form.veryLateGraceMinutes),
         halfDayRules: form.halfDayRules,
+        holidays: form.holidays || [],
       });
       const newSaved = {
         ...form,
@@ -438,6 +596,13 @@ export default function Settings() {
   const addressParts = (form.officeAddress || DEFAULT_OFFICE_COORDS.address).split(",");
   const displayArea = addressParts.filter((p) => !p.toLowerCase().includes("intime")).slice(0, 2).join(",").trim() || "Ruby Park East, Kasba";
 
+  const scrollToSection = (sectionId) => {
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <div className="settings-page-wrapper">
       {/* ══════════════════════════ TOP HEADER ══════════════════════════ */}
@@ -460,8 +625,44 @@ export default function Settings() {
         </button>
       </div>
 
+      {/* ══════════════════════════ SECTION NAVIGATION CHIPS ══════════════════════════ */}
+      <div className="settings-nav-chips-bar">
+        <button
+          type="button"
+          className="settings-nav-chip"
+          onClick={() => scrollToSection("office-section")}
+        >
+          <MapPin size={14} className="icon-blue" />
+          <span>Office &amp; Timing</span>
+        </button>
+        <button
+          type="button"
+          className="settings-nav-chip"
+          onClick={() => scrollToSection("late-section")}
+        >
+          <Clock size={14} className="icon-blue" />
+          <span>Late Status Criteria</span>
+        </button>
+        <button
+          type="button"
+          className="settings-nav-chip"
+          onClick={() => scrollToSection("halfday-section")}
+        >
+          <Calendar size={14} className="icon-blue" />
+          <span>Half Day Saturdays</span>
+        </button>
+        <button
+          type="button"
+          className="settings-nav-chip chip-highlight"
+          onClick={() => scrollToSection("holiday-section")}
+        >
+          <FileSpreadsheet size={14} />
+          <span>Holiday Management (Excel Upload)</span>
+        </button>
+      </div>
+
       {/* ══════════════════════════ ROW 1: SPLIT GRID ══════════════════════════ */}
-      <div className="settings-row-split">
+      <div className="settings-row-split" id="office-section">
         {/* ── LEFT CARD: Office Location & Geo-fence ── */}
         <div className="settings-card office-card">
           <div className="settings-card-head">
@@ -802,7 +1003,7 @@ export default function Settings() {
       </div>
 
       {/* ══════════════════════════ ROW 2: LATE STATUS CRITERIA ══════════════════════════ */}
-      <div className="settings-card late-status-card">
+      <div className="settings-card late-status-card" id="late-section">
         <div className="settings-card-head">
           <div className="settings-card-icon-box">
             <BarChart2 size={20} className="icon-blue" />
@@ -927,7 +1128,7 @@ export default function Settings() {
       </div>
 
       {/* ══════════════════════════ ROW 3: HALF DAY CONFIGURATION ══════════════════════════ */}
-      <div className="settings-card half-day-card">
+      <div className="settings-card half-day-card" id="halfday-section">
         <div className="settings-card-head">
           <div className="settings-card-icon-box">
             <Calendar size={20} className="icon-blue" />
@@ -986,6 +1187,145 @@ export default function Settings() {
           <p className="half-day-info-text">
             Selected Saturdays will be considered as half working days for all employees, every month.
           </p>
+        </div>
+      </div>
+
+      {/* Holiday Management (Excel Upload) Card */}
+      <div className="settings-card holiday-card" id="holiday-section">
+        <div className="settings-card-head holiday-card-head">
+          <div className="holiday-head-left">
+            <div className="settings-card-icon-box">
+              <FileSpreadsheet size={20} className="icon-blue" />
+            </div>
+            <div>
+              <h2 className="settings-card-title">Holiday Management (Excel Upload)</h2>
+              <p className="settings-card-subtitle">
+                Upload holiday list via Excel (.xlsx / .xls) file and set holidays in the calendar.
+              </p>
+            </div>
+          </div>
+          <div className="holiday-head-actions">
+            <button
+              type="button"
+              className="download-sample-csv-btn-top"
+              onClick={downloadSampleExcel}
+              title="Download Excel template (.xlsx)"
+            >
+              <FileSpreadsheet size={14} className="icon-blue" />
+              <span>Download Sample Excel</span>
+            </button>
+            <button
+              type="button"
+              className={`settings-save-btn ${saving ? "is-saving" : ""}`}
+              onClick={handleSave}
+              disabled={saving || !isDirty}
+              title={!isDirty ? "No unsaved changes" : "Save All Changes"}
+            >
+              <Save size={18} strokeWidth={2.2} />
+              <span>{saving ? "Saving…" : "Save All Changes"}</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="holiday-grid-layout">
+          {/* Card 1: Upload Box */}
+          <div
+            className={`holiday-dropzone ${isDragging ? "is-dragging" : ""}`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              if (e.dataTransfer.files?.[0]) {
+                processHolidayFile(e.dataTransfer.files[0]);
+              }
+            }}
+          >
+            <UploadCloud size={32} className="holiday-cloud-icon" />
+            <div className="holiday-upload-title">Upload Holiday Excel File</div>
+            <div className="holiday-upload-hint">
+              Excel format: Date, Holiday Name, Description (optional)
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                if (e.target.files?.[0]) {
+                  processHolidayFile(e.target.files[0]);
+                  e.target.value = "";
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="choose-file-btn"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <FileSpreadsheet size={14} className="icon-blue" />
+              <span>Choose Excel File</span>
+            </button>
+          </div>
+
+          {/* Card 2: Preview Table */}
+          <div className="holiday-preview-card">
+            <div className="holiday-table-header-bar">
+              <span className="holiday-table-title">
+                Preview ({(form.holidays || []).length} holidays found)
+              </span>
+            </div>
+            <div className="holiday-table-scroll">
+              <table className="holiday-preview-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 34, textAlign: "center" }}>#</th>
+                    <th style={{ width: 110 }}>Date</th>
+                    <th>Holiday Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(form.holidays || []).length > 0 ? (
+                    form.holidays.map((h, i) => (
+                      <tr key={i}>
+                        <td style={{ textAlign: "center", color: "#64748b" }}>{i + 1}</td>
+                        <td style={{ fontWeight: 500, whiteSpace: "nowrap" }}>
+                          {formatHolidayDate(h.date)}
+                        </td>
+                        <td style={{ fontWeight: 500 }}>{h.name}</td>
+                        <td style={{ color: "#64748b" }}>{h.description || "—"}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="holiday-empty-cell">
+                        No holidays uploaded yet. Choose an Excel (.xlsx / .xls) file to preview.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Card 3: Status Box ("File looks good!") */}
+          <div className="holiday-status-card">
+            <div className="holiday-status-inner">
+              <div className="holiday-status-icon-circle">
+                <Check size={20} strokeWidth={3} color="#ffffff" />
+              </div>
+              <div className="holiday-status-content">
+                <div className="holiday-status-title">File looks good!</div>
+                <div className="holiday-status-desc">
+                  {(form.holidays || []).length} holidays found. Click &ldquo;Save All Changes&rdquo; to save and set these holidays in the calendar.
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -43,6 +43,7 @@ const updateSettingsValidators = [
   body("halfDayRules").optional().isArray().withMessage("Half-day rules must be a list."),
   body("halfDayRules.*.dayOfWeek").isInt({ min: 0, max: 6 }).withMessage("Invalid day of week in half-day rule."),
   body("halfDayRules.*.occurrence").isInt({ min: 1, max: 5 }).withMessage("Invalid occurrence in half-day rule."),
+  body("holidays").optional().isArray().withMessage("Holidays must be a list."),
 ];
 
 async function updateSettings(req, res, next) {
@@ -60,6 +61,7 @@ async function updateSettings(req, res, next) {
       lateGraceMinutes,
       veryLateGraceMinutes,
       halfDayRules,
+      holidays,
     } = req.body;
 
     const patch = {
@@ -75,6 +77,7 @@ async function updateSettings(req, res, next) {
     };
     if (officeAddress !== undefined) patch.officeAddress = officeAddress;
     if (lateGraceMinutes !== undefined) patch.lateGraceMinutes = lateGraceMinutes;
+    if (holidays !== undefined) patch.holidays = holidays;
 
     const settings = await settingsService.updateSettings(patch);
 

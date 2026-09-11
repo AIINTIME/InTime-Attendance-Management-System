@@ -6,8 +6,7 @@ const {
 } = require("@simplewebauthn/server");
 
 const env = require("../config/env");
-const Employee = require("../models/Employee");
-const PasskeyCredential = require("../models/PasskeyCredential");
+const prisma = require("../config/prisma");
 const { ApiError } = require("../middleware/errorMiddleware");
 
 const CHALLENGE_TTL_MS = 5 * 60 * 1000; // options must be consumed within 5 minutes
@@ -86,29 +85,29 @@ function getExpectedRpIds(origin) {
 }
 
 async function saveChallenge(employeeId, challenge) {
-  await Employee.findByIdAndUpdate(employeeId, {
-    currentChallenge: challenge,
-    currentChallengeAt: new Date(),
+  await prisma.employee.update({
+    where: { id: employeeId },
+    data: { currentChallenge: challenge, currentChallengeAt: new Date() },
   });
 }
 
 async function consumeChallenge(employeeId) {
-  const employee = await Employee.findById(employeeId).select(
-    "+currentChallenge +currentChallengeAt"
-  );
+  const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
   if (!employee || !employee.currentChallenge) {
     throw new ApiError(400, "No pending passkey request found. Please try again.", "NO_CHALLENGE");
   }
   const age = Date.now() - new Date(employee.currentChallengeAt).getTime();
   if (age > CHALLENGE_TTL_MS) {
-    await Employee.findByIdAndUpdate(employeeId, {
-      $unset: { currentChallenge: 1, currentChallengeAt: 1 },
+    await prisma.employee.update({
+      where: { id: employeeId },
+      data: { currentChallenge: null, currentChallengeAt: null },
     });
     throw new ApiError(400, "This passkey request expired. Please try again.", "CHALLENGE_EXPIRED");
   }
   const { currentChallenge } = employee;
-  await Employee.findByIdAndUpdate(employeeId, {
-    $unset: { currentChallenge: 1, currentChallengeAt: 1 },
+  await prisma.employee.update({
+    where: { id: employeeId },
+    data: { currentChallenge: null, currentChallengeAt: null },
   });
   return currentChallenge;
 }
@@ -116,7 +115,7 @@ async function consumeChallenge(employeeId) {
 const MAX_CREDENTIALS_PER_EMPLOYEE = 2;
 
 async function getRegistrationOptions(employee, origin) {
-  const existingCredentials = await PasskeyCredential.find({ employeeId: employee._id });
+  const existingCredentials = await prisma.passkeyCredential.findMany({ where: { employeeId: employee.id } });
 
   if (existingCredentials.length >= MAX_CREDENTIALS_PER_EMPLOYEE) {
     throw new ApiError(
@@ -131,7 +130,7 @@ async function getRegistrationOptions(employee, origin) {
     rpID: resolveRpId(origin),
     userName: employee.email,
     userDisplayName: employee.name,
-    userID: new Uint8Array(Buffer.from(employee._id.toString())),
+    userID: new Uint8Array(Buffer.from(employee.id.toString())),
     attestationType: "none",
     excludeCredentials: existingCredentials.map((cred) => ({
       id: cred.credentialId,
@@ -149,12 +148,12 @@ async function getRegistrationOptions(employee, origin) {
     },
   });
 
-  await saveChallenge(employee._id, options.challenge);
+  await saveChallenge(employee.id, options.challenge);
   return options;
 }
 
 async function verifyRegistration(employee, response, nickname, origin) {
-  const expectedChallenge = await consumeChallenge(employee._id);
+  const expectedChallenge = await consumeChallenge(employee.id);
 
   let verification;
   try {
@@ -180,25 +179,27 @@ async function verifyRegistration(employee, response, nickname, origin) {
     credentialBackedUp,
   } = verification.registrationInfo;
 
-  await PasskeyCredential.create({
-    employeeId: employee._id,
-    credentialId: credentialID,
-    publicKey: fromUint8Array(credentialPublicKey),
-    counter,
-    transports: response?.response?.transports || [],
-    deviceType: credentialDeviceType,
-    backedUp: credentialBackedUp,
-    nickname: nickname || "",
-    lastUsedAt: new Date(),
+  await prisma.passkeyCredential.create({
+    data: {
+      employeeId: employee.id,
+      credentialId: credentialID,
+      publicKey: fromUint8Array(credentialPublicKey),
+      counter,
+      transports: response?.response?.transports || [],
+      deviceType: credentialDeviceType,
+      backedUp: credentialBackedUp,
+      nickname: nickname || "",
+      lastUsedAt: new Date(),
+    },
   });
 
-  await Employee.findByIdAndUpdate(employee._id, { passkeyRegistered: true });
+  await prisma.employee.update({ where: { id: employee.id }, data: { passkeyRegistered: true } });
 
   return true;
 }
 
 async function getAuthenticationOptions(employee, origin) {
-  const credentials = await PasskeyCredential.find({ employeeId: employee._id });
+  const credentials = await prisma.passkeyCredential.findMany({ where: { employeeId: employee.id } });
   if (credentials.length === 0) {
     throw new ApiError(
       400,
@@ -216,16 +217,15 @@ async function getAuthenticationOptions(employee, origin) {
     userVerification: "preferred",
   });
 
-  await saveChallenge(employee._id, options.challenge);
+  await saveChallenge(employee.id, options.challenge);
   return options;
 }
 
 async function verifyAuthentication(employee, response, origin) {
-  const expectedChallenge = await consumeChallenge(employee._id);
+  const expectedChallenge = await consumeChallenge(employee.id);
 
-  const credential = await PasskeyCredential.findOne({
-    employeeId: employee._id,
-    credentialId: response.id,
+  const credential = await prisma.passkeyCredential.findFirst({
+    where: { employeeId: employee.id, credentialId: response.id },
   });
 
   if (!credential) {
@@ -254,27 +254,30 @@ async function verifyAuthentication(employee, response, origin) {
     throw new ApiError(422, "Passkey verification failed.", "PASSKEY_VERIFY_FAILED");
   }
 
-  credential.counter = verification.authenticationInfo.newCounter;
-  credential.lastUsedAt = new Date();
-  await credential.save();
+  await prisma.passkeyCredential.update({
+    where: { id: credential.id },
+    data: {
+      counter: verification.authenticationInfo.newCounter,
+      lastUsedAt: new Date(),
+    },
+  });
 
   return true;
 }
 
 async function deleteCredential(employee, credentialId) {
-  const credential = await PasskeyCredential.findOne({
-    _id: credentialId,
-    employeeId: employee._id,
+  const credential = await prisma.passkeyCredential.findFirst({
+    where: { id: credentialId, employeeId: employee.id },
   });
   if (!credential) {
     throw new ApiError(404, "Passkey not found.", "PASSKEY_NOT_FOUND");
   }
 
-  await credential.deleteOne();
+  await prisma.passkeyCredential.delete({ where: { id: credential.id } });
 
-  const remaining = await PasskeyCredential.countDocuments({ employeeId: employee._id });
+  const remaining = await prisma.passkeyCredential.count({ where: { employeeId: employee.id } });
   if (remaining === 0) {
-    await Employee.findByIdAndUpdate(employee._id, { passkeyRegistered: false });
+    await prisma.employee.update({ where: { id: employee.id }, data: { passkeyRegistered: false } });
   }
 
   return { passkeyRegistered: remaining > 0 };

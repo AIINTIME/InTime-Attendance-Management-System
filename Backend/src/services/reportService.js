@@ -81,7 +81,7 @@ function groupByEmployee(records) {
   const groups = new Map();
   for (const record of records) {
     const employee = record.employeeId || {};
-    const key = employee._id ? employee._id.toString() : "unknown";
+    const key = employee.id ? employee.id.toString() : "unknown";
     if (!groups.has(key)) {
       groups.set(key, { employee, records: [] });
     }
