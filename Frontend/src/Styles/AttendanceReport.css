@@ -499,10 +499,6 @@
   background: #f97316;
 }
 
-.att-bar-pillar.halfday {
-  background: #eab308;
-}
-
 .att-bar-pillar.absent {
   background: #cbd5e1;
 }
@@ -601,10 +597,6 @@
   background: #3b82f6;
 }
 
-.att-legend-dot.others {
-  background: #94a3b8;
-}
-
 .att-legend-val {
   color: #0f172a;
   font-weight: 700;
@@ -668,6 +660,13 @@
   color: #cbd5e1;
 }
 
+.att-cal-cell.present-badge {
+  background: #10b981;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 6px;
+}
+
 .att-cal-cell.wfh-badge {
   background: #3b82f6;
   color: #ffffff;
@@ -675,27 +674,24 @@
   border-radius: 6px;
 }
 
-.att-cal-cell.leave-text {
-  color: #ef4444;
-  font-weight: 800;
+.att-cal-cell.absent-badge {
+  background: #fee2e2;
+  color: #dc2626;
+  font-weight: 700;
+  border-radius: 6px;
 }
 
-.att-cal-cell.halfday-circle {
-  background: #fef08a;
-  color: #854d0e;
-  font-weight: 800;
-  border-radius: 50%;
-  width: 26px;
-  height: 26px;
-  margin: auto;
+.att-cal-cell.leave-badge {
+  background: #eab308;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 6px;
 }
 
+/* Additive: combines with a status badge above instead of replacing it,
+   since a "today" cell can also be present/remote/leave/absent. */
 .att-cal-cell.today-ring {
-  border: 2px solid #3b82f6;
-  border-radius: 50%;
-  width: 26px;
-  height: 26px;
-  margin: auto;
+  box-shadow: 0 0 0 2px #8b5cf6;
 }
 
 .att-cal-legend-row {
@@ -730,28 +726,24 @@
 }
 
 .att-cal-legend-dot.leave {
-  background: #ef4444;
-}
-
-.att-cal-legend-dot.halfday {
   background: #eab308;
 }
 
 .att-cal-legend-dot.absent {
-  background: #94a3b8;
+  background: #dc2626;
 }
 
 .att-cal-legend-ring {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  border: 2px solid #3b82f6;
+  border: 2px solid #8b5cf6;
 }
 
 /* ══════════════════════════ BOTTOM ROW (2 COLUMNS) ══════════════════════════ */
 .att-bottom-row {
   display: grid;
-  grid-template-columns: 1.85fr 1.15fr;
+  grid-template-columns: 1fr;
   gap: 20px;
 }
 
@@ -1023,146 +1015,6 @@
   color: #94a3b8;
   flex: 1;
   text-align: center;
-}
-
-/* ── Insights Card ── */
-.att-insights-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.att-insights-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-
-.att-insights-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.att-insights-icon-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #eff6ff;
-  color: #2563eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.att-insights-title {
-  font-size: 16px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0;
-}
-
-.att-view-details-link {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #0074f1;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-}
-
-.att-view-details-link:hover {
-  text-decoration: underline;
-}
-
-.att-insights-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.att-insight-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.att-insight-badge {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.att-insight-badge.green {
-  background: #dcfce7;
-  color: #16a34a;
-}
-
-.att-insight-badge.blue {
-  background: #dbeafe;
-  color: #2563eb;
-}
-
-.att-insight-badge.amber {
-  background: #fef3c7;
-  color: #d97706;
-}
-
-.att-insight-badge.purple {
-  background: #f3e8ff;
-  color: #9333ea;
-}
-
-.att-insight-badge.teal {
-  background: #ccfbf1;
-  color: #0d9488;
-}
-
-.att-insight-content h4 {
-  font-size: 13px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 2px;
-}
-
-.att-insight-content p {
-  font-size: 11.5px;
-  color: #64748b;
-  margin: 0;
-  line-height: 1.35;
-}
-
-/* Quote Box */
-.att-quote-box {
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 12px;
-  padding: 12px 14px;
-  margin-top: auto;
-}
-
-.att-quote-text {
-  font-size: 12px;
-  font-style: italic;
-  font-weight: 600;
-  color: #0369a1;
-  margin: 0 0 4px;
-}
-
-.att-quote-author {
-  font-size: 11px;
-  font-weight: 700;
-  color: #0284c7;
-  margin: 0;
 }
 
 /* ══════════════════════════ SOLID BLUE EXPORT BUTTON ══════════════════════════ */

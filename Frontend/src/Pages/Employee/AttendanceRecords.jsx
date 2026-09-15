@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ListChecks,
   BarChart3,
@@ -6,24 +6,19 @@ import {
   Download,
   Clock,
   CheckCircle2,
-  TrendingUp,
   Home,
-  CalendarDays,
-  Star,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ArrowRight,
   Zap,
   AlertCircle,
   Users,
   Building,
   Building2,
-  Monitor,
   MapPin,
   X,
 } from "lucide-react";
-import { getMyRecords, getWorkingDays } from "../../Services/attendanceService";
+import { getMyRecords, getWorkingDays, getEmployeeSettings } from "../../Services/attendanceService";
 import { formatDate, formatTime, formatMinutesAsHours } from "../../Utils/dateUtils";
 import { GOOGLE_MAPS_QUERY_URL } from "../../Utils/constants";
 import EmptyState from "../../Components/Common/EmptyState";
@@ -32,111 +27,6 @@ import "../../Styles/AttendanceReport.css";
 // Reused so the employee's own attendance table renders with the exact same
 // look as the admin Attendance Logs table (attlog-* classes).
 import "../../Styles/AttendanceManagement.css";
-
-/* ══════════════════════════════════════════════════════════════════════════════
-   Mock Data for September 2025
-══════════════════════════════════════════════════════════════════════════════ */
-const MOCK_REPORT_DATA = {
-  month: "September 2025",
-  metrics: {
-    present: { count: 18, pct: "72% of work days" },
-    wfh: { count: 3, pct: "12% of work days" },
-    halfDay: { count: 1, pct: "4% of work days" },
-    leave: { count: 1, pct: "4% of work days" },
-    totalWorkingDays: { count: 22, period: "in September" },
-  },
-  overview: [
-    { label: "Present", value: 18, colorClass: "present" },
-    { label: "WFH", value: 3, colorClass: "wfh" },
-    { label: "Leave", value: 1, colorClass: "leave" },
-    { label: "Half Day", value: 1, colorClass: "halfday" },
-    { label: "Absent", value: 0, colorClass: "absent" },
-  ],
-  workLocation: {
-    totalDays: 22,
-    segments: [
-      { label: "In Office", count: 18, pct: 82, color: "#10b981", class: "green" },
-      { label: "Remote", count: 3, pct: 14, color: "#3b82f6", class: "blue" },
-      { label: "Others", count: 1, pct: 4, color: "#94a3b8", class: "others" },
-    ],
-  },
-  workingHours: {
-    totalWorked: "162h 35m",
-    targetTotal: "176h 00m",
-    percentage: 92,
-    avgDaily: "8h 08m",
-    avgTarget: "8h 00m",
-    extraHours: "12h 35m",
-    extraDelta: "+12% more",
-    shortfallHours: "1h 25m",
-    shortfallDelta: "-2% less",
-    // 30 days of September hours (0 to 12h scale)
-    daily: [
-      { day: 1, hours: 8.5 },
-      { day: 2, hours: 9.0 },
-      { day: 3, hours: 8.2 },
-      { day: 4, hours: 8.8 },
-      { day: 5, hours: 8.0 },
-      { day: 6, hours: 0, isWeekend: true },
-      { day: 7, hours: 0, isWeekend: true },
-      { day: 8, hours: 8.5 },
-      { day: 9, hours: 8.4 },
-      { day: 10, hours: 8.9 },
-      { day: 11, hours: 8.1 },
-      { day: 12, hours: 0, isLeave: true }, // Leave
-      { day: 13, hours: 0, isWeekend: true },
-      { day: 14, hours: 0, isWeekend: true },
-      { day: 15, hours: 10.4 }, // Best day: 10h 25m
-      { day: 16, hours: 8.6 },
-      { day: 17, hours: 8.7 },
-      { day: 18, hours: 4.0, isHalfDay: true }, // Half Day
-      { day: 19, hours: 8.2 },
-      { day: 20, hours: 0, isWeekend: true },
-      { day: 21, hours: 0, isWeekend: true },
-      { day: 22, hours: 8.6 },
-      { day: 23, hours: 9.1 },
-      { day: 24, hours: 8.3 },
-      { day: 25, hours: 8.7 },
-      { day: 26, hours: 8.0 },
-      { day: 27, hours: 0, isWeekend: true },
-      { day: 28, hours: 0, isWeekend: true },
-      { day: 29, hours: 8.4 },
-      { day: 30, hours: 8.5 },
-    ],
-  },
-  insights: [
-    {
-      badgeClass: "green",
-      icon: CheckCircle2,
-      title: "Great Consistency!",
-      desc: "You maintained 92% attendance this month.",
-    },
-    {
-      badgeClass: "blue",
-      icon: TrendingUp,
-      title: "Productive Month",
-      desc: "You worked 12h 35m extra hours. Keep it up!",
-    },
-    {
-      badgeClass: "amber",
-      icon: Home,
-      title: "Work From Home",
-      desc: "You worked remotely for 3 days this month.",
-    },
-    {
-      badgeClass: "purple",
-      icon: CalendarDays,
-      title: "1 Leave & 1 Half Day",
-      desc: "You took 1 leave and 1 half day this month.",
-    },
-    {
-      badgeClass: "teal",
-      icon: Star,
-      title: "Best Day",
-      desc: "You worked 10h 25m on 15 Sep 2025.",
-    },
-  ],
-};
 
 /* ══════════════════════════════════════════════════════════════════════════════
    Attendance Records tab (below) is backed entirely by GET /attendance/my-records
@@ -152,6 +42,58 @@ function outOf(count, total) {
   if (count == null) return undefined;
   if (total == null) return count;
   return `${count}/${Number(total.toFixed(1))}`;
+}
+
+function toDateKey(year, month, day) {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+// Maps a calendarDays cell's `status` to its CSS badge class. "leave" isn't
+// produced anywhere yet (no leave feature to source it from), but stays
+// wired up here so it lights up the moment that data exists.
+const CALENDAR_STATUS_CLASS = {
+  present: "present-badge",
+  remote: "wfh-badge",
+  leave: "leave-badge",
+  absent: "absent-badge",
+};
+
+// Same holiday-date parsing as the Home dashboard's MiniCalendar (DD/MM/YYYY,
+// YYYY-MM-DD, or anything the Date constructor accepts).
+function parseHolidayDate(dateStr) {
+  if (!dateStr) return null;
+  const str = String(dateStr).trim();
+  const dmy = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (dmy) {
+    const day = parseInt(dmy[1], 10);
+    const month = parseInt(dmy[2], 10);
+    const year = parseInt(dmy[3], 10);
+    return { day, month, year, dateKey: toDateKey(year, month, day) };
+  }
+  const ymd = str.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+  if (ymd) {
+    const year = parseInt(ymd[1], 10);
+    const month = parseInt(ymd[2], 10);
+    const day = parseInt(ymd[3], 10);
+    return { day, month, year, dateKey: toDateKey(year, month, day) };
+  }
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    return { day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear(), dateKey: toDateKey(d.getFullYear(), d.getMonth() + 1, d.getDate()) };
+  }
+  return null;
+}
+
+function literalOccurrenceInMonth(day) {
+  return Math.ceil(day / 7);
+}
+
+// Whether `day` is an admin-configured off Saturday (Settings page), same
+// rule the backend's computeWorkingDaysInfo uses.
+function isConfiguredHalfDay(year, month, day, dayOfWeek, halfDayRules) {
+  if (!halfDayRules || halfDayRules.length === 0) return false;
+  const occurrence = literalOccurrenceInMonth(day);
+  return halfDayRules.some((rule) => rule.dayOfWeek === dayOfWeek && rule.occurrence === occurrence);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -199,6 +141,262 @@ export default function AttendanceRecords() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, selectedYear, selectedMonthNum]);
+
+  /* ── Reports tab: its own month (always a specific month -- a calendar
+     can't render "All Months"), independent of the Records tab's filter ── */
+  const now = new Date();
+  const [reportsMonth, setReportsMonth] = useState(now.getMonth() + 1);
+  const [reportsYear, setReportsYear] = useState(now.getFullYear());
+  const [reportsRecords, setReportsRecords] = useState(null);
+  const [reportsWorkingDays, setReportsWorkingDays] = useState(null);
+  // Holidays + half-day-Saturday rules, same source as the Home dashboard's
+  // calendar -- fetched once, not per month.
+  const [orgSettings, setOrgSettings] = useState(null);
+
+  useEffect(() => {
+    getEmployeeSettings()
+      .then(setOrgSettings)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== "reports") return;
+    let cancelled = false;
+    setReportsRecords(null);
+    setReportsWorkingDays(null);
+    const monthValue = `${reportsYear}-${String(reportsMonth).padStart(2, "0")}`;
+    const lastDay = new Date(reportsYear, reportsMonth, 0).getDate();
+    (async () => {
+      const [recordsRes, workingDaysRes] = await Promise.allSettled([
+        getMyRecords({
+          fromDate: `${monthValue}-01`,
+          toDate: `${monthValue}-${String(lastDay).padStart(2, "0")}`,
+          limit: FETCH_LIMIT,
+        }),
+        getWorkingDays(reportsYear, reportsMonth),
+      ]);
+      if (cancelled) return;
+      setReportsRecords(recordsRes.status === "fulfilled" ? recordsRes.value.records : []);
+      setReportsWorkingDays(workingDaysRes.status === "fulfilled" ? workingDaysRes.value : null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, reportsYear, reportsMonth]);
+
+  const goToPrevReportsMonth = () => {
+    if (reportsMonth === 1) {
+      setReportsMonth(12);
+      setReportsYear((y) => y - 1);
+    } else {
+      setReportsMonth((m) => m - 1);
+    }
+  };
+
+  const goToNextReportsMonth = () => {
+    if (reportsMonth === 12) {
+      setReportsMonth(1);
+      setReportsYear((y) => y + 1);
+    } else {
+      setReportsMonth((m) => m + 1);
+    }
+  };
+
+  const holidayKeySet = useMemo(() => {
+    const set = new Set();
+    if (Array.isArray(orgSettings?.holidays)) {
+      for (const h of orgSettings.holidays) {
+        const p = parseHolidayDate(h.date);
+        if (p) set.add(p.dateKey);
+      }
+    }
+    return set;
+  }, [orgSettings]);
+
+  const isNonWorkingDay = (year, month, day, dayOfWeek) => {
+    if (dayOfWeek === 0) return true; // Sunday
+    if (holidayKeySet.has(toDateKey(year, month, day))) return true;
+    if (dayOfWeek === 6) return isConfiguredHalfDay(year, month, day, 6, orgSettings?.halfDayRules || []);
+    return false;
+  };
+
+  // Real Present / Office / Remote / On Time / Late / Absent for whichever
+  // month the Reports calendar is currently showing. Leave has no backing
+  // data source yet, so it's always 0 (see the module doc comment above).
+  const reportsStats = useMemo(() => {
+    const records = reportsRecords || [];
+    const office = records.filter((r) => r.loginType === "OFFICE").length;
+    const remote = records.filter((r) => r.loginType === "DISTANCE").length;
+    const onTime = records.filter((r) => r.latenessStatus === "ON_TIME").length;
+    const late = records.length - onTime;
+
+    const today = new Date();
+    const isCurrentMonth = reportsYear === today.getFullYear() && reportsMonth === today.getMonth() + 1;
+    const isFutureMonth =
+      reportsYear > today.getFullYear() || (reportsYear === today.getFullYear() && reportsMonth > today.getMonth() + 1);
+    const daysInMonth = new Date(reportsYear, reportsMonth, 0).getDate();
+    const lastElapsedDay = isCurrentMonth ? today.getDate() - 1 : isFutureMonth ? 0 : daysInMonth;
+
+    let absent = 0;
+    for (let d = 1; d <= lastElapsedDay; d++) {
+      const dayOfWeek = new Date(reportsYear, reportsMonth - 1, d).getDay();
+      if (isNonWorkingDay(reportsYear, reportsMonth, d, dayOfWeek)) continue;
+      const dateKey = toDateKey(reportsYear, reportsMonth, d);
+      const attended = records.some((r) => r.workingDateKey === dateKey);
+      if (!attended) absent++;
+    }
+
+    return {
+      present: office + remote,
+      office,
+      remote,
+      onTime,
+      late,
+      absent,
+      leave: 0,
+      totalWorkingDays: reportsWorkingDays?.totalWorkingDays ?? null,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportsRecords, reportsWorkingDays, reportsYear, reportsMonth, holidayKeySet, orgSettings]);
+
+  const overviewBars = useMemo(
+    () => [
+      { label: "Present", value: reportsStats.office, colorClass: "present" },
+      { label: "Remote", value: reportsStats.remote, colorClass: "wfh" },
+      { label: "Leave", value: reportsStats.leave, colorClass: "leave" },
+      { label: "Absent", value: reportsStats.absent, colorClass: "absent" },
+    ],
+    [reportsStats]
+  );
+
+  // Y-axis top value: rounded up to a multiple of 4x5 so the 4 gridlines
+  // (100/75/50/25%) land on clean multiples of 5, same as the original
+  // fixed 20/15/10/5/0 scale -- just no longer clipping a busy month.
+  const overviewMax = useMemo(() => {
+    const highest = Math.max(0, ...overviewBars.map((b) => b.value));
+    const step = Math.max(5, Math.ceil(highest / 4 / 5) * 5);
+    return step * 4;
+  }, [overviewBars]);
+
+  const workLocationSegments = useMemo(() => {
+    const total = reportsStats.office + reportsStats.remote;
+    const pct = (n) => (total > 0 ? Math.round((n / total) * 100) : 0);
+    return {
+      totalDays: total,
+      segments: [
+        { label: "In Office", count: reportsStats.office, pct: pct(reportsStats.office), class: "green" },
+        { label: "Remote", count: reportsStats.remote, pct: pct(reportsStats.remote), class: "blue" },
+      ],
+    };
+  }, [reportsStats]);
+
+  // Full 7-wide grid for the selected month, including dimmed padding cells
+  // from the adjacent months so every week row stays 7 columns.
+  const calendarDays = useMemo(() => {
+    const daysInMonth = new Date(reportsYear, reportsMonth, 0).getDate();
+    const firstDayOfWeek = new Date(reportsYear, reportsMonth - 1, 1).getDay();
+    const prevMonthDays = new Date(reportsYear, reportsMonth - 1, 0).getDate();
+    const today = new Date();
+    const todayKey = toDateKey(today.getFullYear(), today.getMonth() + 1, today.getDate());
+    const records = reportsRecords || [];
+
+    const cells = [];
+    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+      cells.push({ key: `prev-${i}`, label: prevMonthDays - i, dimmed: true });
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateKey = toDateKey(reportsYear, reportsMonth, d);
+      const dayOfWeek = new Date(reportsYear, reportsMonth - 1, d).getDay();
+      const nonWorking = isNonWorkingDay(reportsYear, reportsMonth, d, dayOfWeek);
+      const isFuture = dateKey > todayKey;
+      const record = records.find((r) => r.workingDateKey === dateKey);
+
+      let status = null;
+      if (record) {
+        status = record.loginType === "DISTANCE" ? "remote" : "present";
+      } else if (!nonWorking && !isFuture) {
+        status = "absent";
+      }
+
+      cells.push({
+        key: dateKey,
+        label: d,
+        dimmed: !status,
+        status,
+        isToday: dateKey === todayKey,
+      });
+    }
+    const remainder = cells.length % 7;
+    if (remainder !== 0) {
+      for (let i = 1; i <= 7 - remainder; i++) {
+        cells.push({ key: `next-${i}`, label: "-", dimmed: true });
+      }
+    }
+    return cells;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportsYear, reportsMonth, reportsRecords, holidayKeySet, orgSettings]);
+
+  // Per-day worked minutes for the whole month, real data from
+  // totalWorkingMinutes (only set once a day is checked out -- a day still
+  // in progress reads as 0 here, same as an absent day, until it's closed
+  // out). Feeds both the mini stat cards below and the daily bar chart.
+  const dailyWorkingHours = useMemo(() => {
+    const daysInMonth = new Date(reportsYear, reportsMonth, 0).getDate();
+    const records = reportsRecords || [];
+    const minutesByDate = new Map();
+    for (const r of records) {
+      if (r.checkOutTime && r.totalWorkingMinutes != null) {
+        minutesByDate.set(r.workingDateKey, r.totalWorkingMinutes);
+      }
+    }
+    const days = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateKey = toDateKey(reportsYear, reportsMonth, d);
+      const dayOfWeek = new Date(reportsYear, reportsMonth - 1, d).getDay();
+      days.push({
+        day: d,
+        hours: (minutesByDate.get(dateKey) || 0) / 60,
+        isWeekend: isNonWorkingDay(reportsYear, reportsMonth, d, dayOfWeek),
+      });
+    }
+    return days;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportsYear, reportsMonth, reportsRecords, holidayKeySet, orgSettings]);
+
+  const TARGET_DAILY_HOURS = 8; // matches the chart's existing "Target Hours (8h)" line
+
+  const workingHoursStats = useMemo(() => {
+    let totalWorkedMinutes = 0;
+    let extraMinutes = 0;
+    let shortfallMinutes = 0;
+    let presentCount = 0;
+    for (const d of dailyWorkingHours) {
+      if (d.hours <= 0) continue;
+      presentCount++;
+      const minutes = d.hours * 60;
+      totalWorkedMinutes += minutes;
+      const diff = minutes - TARGET_DAILY_HOURS * 60;
+      if (diff > 0) extraMinutes += diff;
+      else shortfallMinutes += -diff;
+    }
+
+    const totalWorkingDays = reportsWorkingDays?.totalWorkingDays ?? null;
+    const targetTotalMinutes = totalWorkingDays != null ? totalWorkingDays * TARGET_DAILY_HOURS * 60 : null;
+    const percentage = targetTotalMinutes ? Math.round((totalWorkedMinutes / targetTotalMinutes) * 100) : 0;
+    const avgDailyMinutes = presentCount > 0 ? totalWorkedMinutes / presentCount : 0;
+    const pctOfTarget = (minutes) => (targetTotalMinutes ? Math.round((minutes / targetTotalMinutes) * 100) : 0);
+
+    return {
+      totalWorkedMinutes,
+      targetTotalMinutes,
+      percentage,
+      avgDailyMinutes,
+      extraMinutes,
+      shortfallMinutes,
+      extraPct: pctOfTarget(extraMinutes),
+      shortfallPct: pctOfTarget(shortfallMinutes),
+    };
+  }, [dailyWorkingHours, reportsWorkingDays]);
 
   async function loadTable(year, month) {
     setData(null);
@@ -327,9 +525,8 @@ export default function AttendanceRecords() {
 
   /* Donut calculations (circumference = 2 * PI * 52 ≈ 326.7) */
   const circumference = 2 * Math.PI * 52;
-  const officeDash = (MOCK_REPORT_DATA.workLocation.segments[0].pct / 100) * circumference;
-  const remoteDash = (MOCK_REPORT_DATA.workLocation.segments[1].pct / 100) * circumference;
-  const othersDash = (MOCK_REPORT_DATA.workLocation.segments[2].pct / 100) * circumference;
+  const officeDash = (workLocationSegments.segments[0].pct / 100) * circumference;
+  const remoteDash = (workLocationSegments.segments[1].pct / 100) * circumference;
 
   return (
     <div className="att-report-page">
@@ -357,11 +554,10 @@ export default function AttendanceRecords() {
         <div className="att-report-controls">
           {activeTab === "reports" ? (
             <>
-              <button type="button" className="att-month-select-btn" title="Select Month">
+              <div className="att-month-select-btn" style={{ cursor: "default" }} title="Change the month from the calendar card below">
                 <Calendar size={16} color="#0074F1" />
-                <span>Sep 2025</span>
-                <ChevronDown size={14} color="#64748b" />
-              </button>
+                <span>{MONTH_NAMES[reportsMonth - 1].slice(0, 3)} {reportsYear}</span>
+              </div>
 
               <button
                 type="button"
@@ -456,67 +652,66 @@ export default function AttendanceRecords() {
       {/* ══════════════════════════ TAB 1: REPORTS DASHBOARD ══════════════════════════ */}
       {activeTab === "reports" && (
         <>
-          {/* ── Top 5 Metric Cards ── */}
+          {/* ── Top 5 Metric Cards (real data; Leave stays 0 -- no leave
+               feature to source it from yet) ── */}
           <div className="att-metrics-grid">
-            {/* 1. Present */}
-            <div className="att-metric-card green">
-              <div className="att-metric-icon-circle">
-                <Users size={22} />
-              </div>
-              <div className="att-metric-content">
-                <span className="att-metric-value">{MOCK_REPORT_DATA.metrics.present.count}</span>
-                <span className="att-metric-label">Present</span>
-                <span className="att-metric-sub">{MOCK_REPORT_DATA.metrics.present.pct}</span>
-              </div>
-            </div>
-
-            {/* 2. Work From Home */}
-            <div className="att-metric-card blue">
-              <div className="att-metric-icon-circle">
-                <Monitor size={20} />
-              </div>
-              <div className="att-metric-content">
-                <span className="att-metric-value">{MOCK_REPORT_DATA.metrics.wfh.count}</span>
-                <span className="att-metric-label">Work From Home</span>
-                <span className="att-metric-sub">{MOCK_REPORT_DATA.metrics.wfh.pct}</span>
-              </div>
-            </div>
-
-            {/* 3. Half Day */}
-            <div className="att-metric-card amber">
-              <div className="att-metric-icon-circle">
-                <Building size={20} />
-              </div>
-              <div className="att-metric-content">
-                <span className="att-metric-value">{MOCK_REPORT_DATA.metrics.halfDay.count}</span>
-                <span className="att-metric-label">Half Day</span>
-                <span className="att-metric-sub">{MOCK_REPORT_DATA.metrics.halfDay.pct}</span>
-              </div>
-            </div>
-
-            {/* 4. Leave */}
-            <div className="att-metric-card red">
-              <div className="att-metric-icon-circle">
-                <Calendar size={20} />
-              </div>
-              <div className="att-metric-content">
-                <span className="att-metric-value">{MOCK_REPORT_DATA.metrics.leave.count}</span>
-                <span className="att-metric-label">Leave</span>
-                <span className="att-metric-sub">{MOCK_REPORT_DATA.metrics.leave.pct}</span>
-              </div>
-            </div>
-
-            {/* 5. Total Working Days */}
-            <div className="att-metric-card purple">
-              <div className="att-metric-icon-circle">
-                <Users size={22} />
-              </div>
-              <div className="att-metric-content">
-                <span className="att-metric-value">{MOCK_REPORT_DATA.metrics.totalWorkingDays.count}</span>
-                <span className="att-metric-label">Total Working Days</span>
-                <span className="att-metric-sub">{MOCK_REPORT_DATA.metrics.totalWorkingDays.period}</span>
-              </div>
-            </div>
+            {[
+              {
+                label: "Present",
+                value: reportsStats.present,
+                sub:
+                  reportsStats.totalWorkingDays != null
+                    ? `${Math.round((reportsStats.present / reportsStats.totalWorkingDays) * 100)}% of work days`
+                    : undefined,
+                color: "green",
+                icon: Users,
+              },
+              {
+                label: "On Time",
+                value: reportsStats.onTime,
+                sub: reportsStats.present > 0 ? `${Math.round((reportsStats.onTime / reportsStats.present) * 100)}% of present days` : undefined,
+                color: "blue",
+                icon: CheckCircle2,
+              },
+              {
+                label: "Late",
+                value: reportsStats.late,
+                sub: reportsStats.present > 0 ? `${Math.round((reportsStats.late / reportsStats.present) * 100)}% of present days` : undefined,
+                color: "amber",
+                icon: Clock,
+              },
+              {
+                label: "Absent",
+                value: reportsStats.absent,
+                sub:
+                  reportsStats.totalWorkingDays != null
+                    ? `${Math.round((reportsStats.absent / reportsStats.totalWorkingDays) * 100)}% of work days`
+                    : undefined,
+                color: "red",
+                icon: AlertCircle,
+              },
+              {
+                label: "Leave",
+                value: reportsStats.leave,
+                sub: "Leave tracking coming soon",
+                color: "purple",
+                icon: Calendar,
+              },
+            ].map((card) => {
+              const Icon = card.icon;
+              return (
+                <div key={card.label} className={`att-metric-card ${card.color}`}>
+                  <div className="att-metric-icon-circle">
+                    <Icon size={20} />
+                  </div>
+                  <div className="att-metric-content">
+                    <span className="att-metric-value">{reportsRecords === null ? "—" : card.value}</span>
+                    <span className="att-metric-label">{card.label}</span>
+                    <span className="att-metric-sub">{card.sub ?? ""}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* ── Middle Row (3 Columns) ── */}
@@ -526,8 +721,7 @@ export default function AttendanceRecords() {
               <div className="att-card-header">
                 <h3 className="att-card-title">Attendance Overview</h3>
                 <div className="att-card-dropdown">
-                  <span>This Month</span>
-                  <ChevronDown size={12} />
+                  <span>{MONTH_NAMES[reportsMonth - 1]} {reportsYear}</span>
                 </div>
               </div>
 
@@ -535,10 +729,10 @@ export default function AttendanceRecords() {
                 <div className="att-chart-plot-area">
                   {/* Y Axis Values */}
                   <div className="att-chart-y-axis">
-                    <span>20</span>
-                    <span>15</span>
-                    <span>10</span>
-                    <span>5</span>
+                    <span>{overviewMax}</span>
+                    <span>{Math.round(overviewMax * 0.75)}</span>
+                    <span>{Math.round(overviewMax * 0.5)}</span>
+                    <span>{Math.round(overviewMax * 0.25)}</span>
                     <span>0</span>
                   </div>
 
@@ -549,9 +743,8 @@ export default function AttendanceRecords() {
                   <div className="att-chart-grid-line" style={{ top: "75%" }} />
 
                   {/* Bars */}
-                  {MOCK_REPORT_DATA.overview.map((item, idx) => {
-                    const maxVal = 20;
-                    const heightPct = Math.max(3, (item.value / maxVal) * 100);
+                  {overviewBars.map((item, idx) => {
+                    const heightPct = item.value > 0 ? Math.max(3, (item.value / overviewMax) * 100) : 0;
                     return (
                       <div key={idx} className="att-bar-col">
                         <span className="att-bar-val-badge">{item.value}</span>
@@ -566,7 +759,7 @@ export default function AttendanceRecords() {
 
                 {/* X Axis Labels */}
                 <div className="att-chart-x-labels">
-                  {MOCK_REPORT_DATA.overview.map((item, idx) => (
+                  {overviewBars.map((item, idx) => (
                     <span key={idx} className="att-chart-x-label">
                       {item.label}
                     </span>
@@ -587,7 +780,7 @@ export default function AttendanceRecords() {
                     {/* Background Track */}
                     <circle cx="70" cy="70" r="52" fill="none" stroke="#f1f5f9" strokeWidth="15" />
 
-                    {/* Segment 1: In Office (82%) */}
+                    {/* Segment 1: In Office */}
                     <circle
                       cx="70"
                       cy="70"
@@ -599,7 +792,7 @@ export default function AttendanceRecords() {
                       strokeDashoffset="0"
                     />
 
-                    {/* Segment 2: Remote (14%) */}
+                    {/* Segment 2: Remote */}
                     <circle
                       cx="70"
                       cy="70"
@@ -610,29 +803,17 @@ export default function AttendanceRecords() {
                       strokeDasharray={`${remoteDash} ${circumference}`}
                       strokeDashoffset={-officeDash}
                     />
-
-                    {/* Segment 3: Others (4%) */}
-                    <circle
-                      cx="70"
-                      cy="70"
-                      r="52"
-                      fill="none"
-                      stroke="#94a3b8"
-                      strokeWidth="15"
-                      strokeDasharray={`${othersDash} ${circumference}`}
-                      strokeDashoffset={-(officeDash + remoteDash)}
-                    />
                   </svg>
 
                   <div className="att-donut-center">
-                    <span className="att-donut-days-num">{MOCK_REPORT_DATA.workLocation.totalDays}</span>
+                    <span className="att-donut-days-num">{workLocationSegments.totalDays}</span>
                     <span className="att-donut-days-label">Days</span>
                   </div>
                 </div>
 
                 {/* Legend List */}
                 <div className="att-donut-legend">
-                  {MOCK_REPORT_DATA.workLocation.segments.map((seg, idx) => (
+                  {workLocationSegments.segments.map((seg, idx) => (
                     <div key={idx} className="att-donut-legend-item">
                       <div className="att-legend-left">
                         <span className={`att-legend-dot ${seg.class}`} />
@@ -652,11 +833,11 @@ export default function AttendanceRecords() {
               <div className="att-card-header">
                 <h3 className="att-card-title">Monthly Calendar</h3>
                 <div className="att-cal-header-controls">
-                  <button type="button" className="att-cal-nav-btn">
+                  <button type="button" className="att-cal-nav-btn" onClick={goToPrevReportsMonth} title="Previous month">
                     <ChevronLeft size={16} />
                   </button>
-                  <span>September 2025</span>
-                  <button type="button" className="att-cal-nav-btn">
+                  <span>{MONTH_NAMES[reportsMonth - 1]} {reportsYear}</span>
+                  <button type="button" className="att-cal-nav-btn" onClick={goToNextReportsMonth} title="Next month">
                     <ChevronRight size={16} />
                   </button>
                 </div>
@@ -670,50 +851,17 @@ export default function AttendanceRecords() {
                   </div>
                 ))}
 
-                {/* Week 1 */}
-                <div className="att-cal-cell dimmed">31</div>
-                <div className="att-cal-cell">1</div>
-                <div className="att-cal-cell">2</div>
-                <div className="att-cal-cell wfh-badge">3</div>
-                <div className="att-cal-cell">4</div>
-                <div className="att-cal-cell">5</div>
-                <div className="att-cal-cell">6</div>
-
-                {/* Week 2 */}
-                <div className="att-cal-cell">7</div>
-                <div className="att-cal-cell">8</div>
-                <div className="att-cal-cell">9</div>
-                <div className="att-cal-cell">10</div>
-                <div className="att-cal-cell">11</div>
-                <div className="att-cal-cell leave-text">12</div>
-                <div className="att-cal-cell">13</div>
-
-                {/* Week 3 */}
-                <div className="att-cal-cell">14</div>
-                <div className="att-cal-cell">15</div>
-                <div className="att-cal-cell">16</div>
-                <div className="att-cal-cell">17</div>
-                <div className="att-cal-cell halfday-circle">18</div>
-                <div className="att-cal-cell">19</div>
-                <div className="att-cal-cell">20</div>
-
-                {/* Week 4 */}
-                <div className="att-cal-cell">21</div>
-                <div className="att-cal-cell">22</div>
-                <div className="att-cal-cell">23</div>
-                <div className="att-cal-cell">24</div>
-                <div className="att-cal-cell">25</div>
-                <div className="att-cal-cell">26</div>
-                <div className="att-cal-cell">27</div>
-
-                {/* Week 5 */}
-                <div className="att-cal-cell">28</div>
-                <div className="att-cal-cell">29</div>
-                <div className="att-cal-cell">30</div>
-                <div className="att-cal-cell dimmed">-</div>
-                <div className="att-cal-cell dimmed">-</div>
-                <div className="att-cal-cell dimmed">-</div>
-                <div className="att-cal-cell dimmed">-</div>
+                {calendarDays.map((cell) => {
+                  const statusClass = CALENDAR_STATUS_CLASS[cell.status] || "";
+                  return (
+                    <div
+                      key={cell.key}
+                      className={`att-cal-cell ${cell.dimmed ? "dimmed" : ""} ${statusClass} ${cell.isToday ? "today-ring" : ""}`}
+                    >
+                      {cell.label}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Calendar Legend */}
@@ -724,15 +872,11 @@ export default function AttendanceRecords() {
                 </div>
                 <div className="att-cal-legend-item">
                   <span className="att-cal-legend-dot wfh" />
-                  <span>Work From Home</span>
+                  <span>Remote</span>
                 </div>
                 <div className="att-cal-legend-item">
                   <span className="att-cal-legend-dot leave" />
                   <span>Leave</span>
-                </div>
-                <div className="att-cal-legend-item">
-                  <span className="att-cal-legend-dot halfday" />
-                  <span>Half Day</span>
                 </div>
                 <div className="att-cal-legend-item">
                   <span className="att-cal-legend-dot absent" />
@@ -762,8 +906,7 @@ export default function AttendanceRecords() {
                 </div>
 
                 <div className="att-card-dropdown">
-                  <span>This Month</span>
-                  <ChevronDown size={12} />
+                  <span>{MONTH_NAMES[reportsMonth - 1]} {reportsYear}</span>
                 </div>
               </div>
 
@@ -777,16 +920,18 @@ export default function AttendanceRecords() {
                     </div>
                     <span className="att-wh-mini-label">Total Hours Worked</span>
                   </div>
-                  <span className="att-wh-mini-val">{MOCK_REPORT_DATA.workingHours.totalWorked}</span>
-                  <span className="att-wh-mini-sub">of {MOCK_REPORT_DATA.workingHours.targetTotal}</span>
+                  <span className="att-wh-mini-val">{formatMinutesAsHours(workingHoursStats.totalWorkedMinutes)}</span>
+                  <span className="att-wh-mini-sub">
+                    {workingHoursStats.targetTotalMinutes != null ? `of ${formatMinutesAsHours(workingHoursStats.targetTotalMinutes)}` : ""}
+                  </span>
                   <div className="att-wh-progress-wrap">
                     <div className="att-wh-progress-bar">
                       <div
                         className="att-wh-progress-fill"
-                        style={{ width: `${MOCK_REPORT_DATA.workingHours.percentage}%` }}
+                        style={{ width: `${Math.min(100, workingHoursStats.percentage)}%` }}
                       />
                     </div>
-                    <span className="att-wh-progress-pct">{MOCK_REPORT_DATA.workingHours.percentage}%</span>
+                    <span className="att-wh-progress-pct">{workingHoursStats.percentage}%</span>
                   </div>
                 </div>
 
@@ -798,8 +943,8 @@ export default function AttendanceRecords() {
                     </div>
                     <span className="att-wh-mini-label">Average Daily Hours</span>
                   </div>
-                  <span className="att-wh-mini-val">{MOCK_REPORT_DATA.workingHours.avgDaily}</span>
-                  <span className="att-wh-mini-sub">Target: {MOCK_REPORT_DATA.workingHours.avgTarget}</span>
+                  <span className="att-wh-mini-val">{formatMinutesAsHours(workingHoursStats.avgDailyMinutes)}</span>
+                  <span className="att-wh-mini-sub">Target: {TARGET_DAILY_HOURS}h 00m</span>
                 </div>
 
                 {/* 3. Extra Hours */}
@@ -810,8 +955,8 @@ export default function AttendanceRecords() {
                     </div>
                     <span className="att-wh-mini-label">Extra Hours</span>
                   </div>
-                  <span className="att-wh-mini-val">{MOCK_REPORT_DATA.workingHours.extraHours}</span>
-                  <span className="att-wh-delta-badge green">{MOCK_REPORT_DATA.workingHours.extraDelta}</span>
+                  <span className="att-wh-mini-val">{formatMinutesAsHours(workingHoursStats.extraMinutes)}</span>
+                  <span className="att-wh-delta-badge green">+{workingHoursStats.extraPct}% more</span>
                 </div>
 
                 {/* 4. Shortfall Hours */}
@@ -822,8 +967,8 @@ export default function AttendanceRecords() {
                     </div>
                     <span className="att-wh-mini-label">Shortfall Hours</span>
                   </div>
-                  <span className="att-wh-mini-val">{MOCK_REPORT_DATA.workingHours.shortfallHours}</span>
-                  <span className="att-wh-delta-badge red">{MOCK_REPORT_DATA.workingHours.shortfallDelta}</span>
+                  <span className="att-wh-mini-val">{formatMinutesAsHours(workingHoursStats.shortfallMinutes)}</span>
+                  <span className="att-wh-delta-badge red">-{workingHoursStats.shortfallPct}% less</span>
                 </div>
               </div>
 
@@ -854,14 +999,14 @@ export default function AttendanceRecords() {
                   {/* 8h Target Horizontal Dashed Line */}
                   <div className="att-daily-target-line" />
 
-                  {/* 30 Bars */}
+                  {/* One bar per day of the selected month */}
                   <div className="att-daily-bars-row">
-                    {MOCK_REPORT_DATA.workingHours.daily.map((item) => {
+                    {dailyWorkingHours.map((item) => {
                       const maxHours = 12;
                       const heightPct = Math.min(100, (item.hours / maxHours) * 100);
                       const isMuted = item.isWeekend || item.hours === 0;
                       return (
-                        <div key={item.day} className="att-daily-bar-item" title={`Day ${item.day}: ${item.hours}h`}>
+                        <div key={item.day} className="att-daily-bar-item" title={`Day ${item.day}: ${item.hours.toFixed(1)}h`}>
                           <div
                             className={`att-daily-pillar ${isMuted ? "muted" : ""}`}
                             style={{ height: `${heightPct}%` }}
@@ -872,53 +1017,14 @@ export default function AttendanceRecords() {
                   </div>
                 </div>
 
-                {/* X Axis Numbers (1 to 30) */}
+                {/* X Axis Numbers (1 to last day of the month) */}
                 <div className="att-daily-x-axis">
-                  {MOCK_REPORT_DATA.workingHours.daily.map((item) => (
+                  {dailyWorkingHours.map((item) => (
                     <span key={item.day} className="att-daily-x-num">
                       {item.day}
                     </span>
                   ))}
                 </div>
-              </div>
-            </div>
-
-            {/* Column 2: Insights */}
-            <div className="att-card att-insights-card">
-              <div className="att-insights-header">
-                <div className="att-insights-title-wrap">
-                  <div className="att-insights-icon-circle">
-                    <Zap size={18} />
-                  </div>
-                  <h3 className="att-insights-title">Insights</h3>
-                </div>
-                <a href="#details" className="att-view-details-link" onClick={(e) => e.preventDefault()}>
-                  <span>View Details</span>
-                  <ArrowRight size={14} />
-                </a>
-              </div>
-
-              <div className="att-insights-list">
-                {MOCK_REPORT_DATA.insights.map((ins, idx) => {
-                  const Icon = ins.icon;
-                  return (
-                    <div key={idx} className="att-insight-item">
-                      <div className={`att-insight-badge ${ins.badgeClass}`}>
-                        <Icon size={16} />
-                      </div>
-                      <div className="att-insight-content">
-                        <h4>{ins.title}</h4>
-                        <p>{ins.desc}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Motivational Quote Box */}
-              <div className="att-quote-box">
-                <p className="att-quote-text">“Small steps every day make big progress.”</p>
-                <p className="att-quote-author">— InTime</p>
               </div>
             </div>
           </div>
