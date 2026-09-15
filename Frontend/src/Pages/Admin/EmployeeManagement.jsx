@@ -346,14 +346,14 @@ export default function EmployeeManagement() {
           <table className="emp-table">
             <thead>
               <tr>
-                <th style={{ width: 48, paddingLeft: 24 }}>#</th>
+                <th style={{ width: 36, paddingLeft: 16 }}>#</th>
                 <th>Employee</th>
                 <th>Employee ID</th>
                 <th>Department</th>
                 <th>Designation</th>
                 <th>Email</th>
                 <th>Phone</th>
-                <th style={{ textAlign: "left", minWidth: 320 }}>Actions</th>
+                <th style={{ textAlign: "left" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -380,7 +380,7 @@ export default function EmployeeManagement() {
 
                   return (
                     <tr key={emp.id}>
-                      <td className="emp-index-cell" style={{ paddingLeft: 24 }}>{globalIndex}</td>
+                      <td className="emp-index-cell" style={{ paddingLeft: 16 }}>{globalIndex}</td>
 
                       {/* Employee with avatar or initials */}
                       <td>
@@ -412,8 +412,8 @@ export default function EmployeeManagement() {
                         </div>
                       </td>
 
-                      <td className="emp-id-text">{emp.employeeId}</td>
-                      <td>
+                      <td className="emp-id-text" data-label="Employee ID">{emp.employeeId}</td>
+                      <td data-label="Department">
                         <span
                           className="emp-dept-pill"
                           style={{
@@ -424,9 +424,9 @@ export default function EmployeeManagement() {
                           {emp.department}
                         </span>
                       </td>
-                      <td className="emp-email-text">{emp.designation}</td>
-                      <td className="emp-email-text">{emp.email}</td>
-                      <td className="emp-phone-text">{formatPhoneDisplay(emp.phone, emp.countryCode)}</td>
+                      <td className="emp-email-text" data-label="Designation">{emp.designation}</td>
+                      <td className="emp-email-text" data-label="Email">{emp.email}</td>
+                      <td className="emp-phone-text" data-label="Phone">{formatPhoneDisplay(emp.phone, emp.countryCode)}</td>
 
                       {/* Actions Column */}
                       <td>
@@ -448,7 +448,7 @@ export default function EmployeeManagement() {
                             onClick={() => setResetPasswordEmployee(emp)}
                           >
                             <KeyRound size={13} strokeWidth={2.2} />
-                            <span>Password Reset</span>
+                            <span>Reset</span>
                           </button>
 
                           <button

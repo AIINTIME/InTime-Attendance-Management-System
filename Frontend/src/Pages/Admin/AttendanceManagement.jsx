@@ -549,7 +549,7 @@ export default function AttendanceManagement() {
               </thead>
               {groupedByDate.map((group, groupIdx) => (
                 <tbody key={group.key}>
-                  <tr className="attlog-date-group-row">
+                  <tr className="attlog-date-group-row" key={`${group.key}-header`}>
                     <td colSpan={9}>
                       <div className="attlog-date-group-content">
                         <div className="attlog-date-group-left">
@@ -651,12 +651,12 @@ export default function AttendanceManagement() {
                       </td>
 
                       {/* Check In Time with dynamic status dot */}
-                      <td className="cell-time">
+                      <td className="cell-time" data-label="Check In">
                         <CheckInTime time={r.checkInTime} latenessStatus={r.latenessStatus} />
                       </td>
 
                       {/* Check In Location */}
-                      <td className="cell-location">
+                      <td className="cell-location" data-label="Check In Location">
                         <a
                           href={GOOGLE_MAPS_QUERY_URL(r.latitude, r.longitude)}
                           target="_blank"
@@ -675,12 +675,12 @@ export default function AttendanceManagement() {
                       </td>
 
                       {/* Check Out Time */}
-                      <td className="cell-time">
+                      <td className="cell-time" data-label="Check Out">
                         {r.checkOutTime ? formatTime(r.checkOutTime) : "—"}
                       </td>
 
                       {/* Check Out Location */}
-                      <td className="cell-location">
+                      <td className="cell-location" data-label="Check Out Location">
                         {r.checkOutTime ? (
                           <a
                             href={GOOGLE_MAPS_QUERY_URL(
@@ -706,7 +706,7 @@ export default function AttendanceManagement() {
                       </td>
 
                       {/* Work Mode */}
-                      <td className="cell-badge">
+                      <td className="cell-badge" data-label="Work Mode">
                         <span className={`attlog-pill-badge attlog-workmode-badge ${modeBadgeClass}`}>
                           {isOffice ? <Building2 size={13} /> : <Home size={13} />}
                           {modeLabel}
@@ -714,7 +714,7 @@ export default function AttendanceManagement() {
                       </td>
 
                       {/* Total Hours */}
-                      <td className="cell-hours">
+                      <td className="cell-hours" data-label="Total Hours">
                         {duration ? duration.text : "—"}
                       </td>
 
