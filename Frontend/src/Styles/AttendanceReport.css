@@ -44,6 +44,25 @@
   gap: 10px;
 }
 
+/* Mobile-only "Filter" toggle button (see the Records tab controls in
+   AttendanceRecords.jsx) -- hidden on desktop, where every filter already
+   shows inline; the @media block below reveals it and hides the group it
+   toggles instead. Three-class selector (not just .att-mobile-filter-toggle,
+   or even .att-btn.att-mobile-filter-toggle) so this out-specificities
+   .att-report-controls .att-btn's own `display: inline-flex`, which is
+   defined later in this file at the same two-class specificity and would
+   otherwise win the tie. */
+.att-report-controls .att-btn.att-mobile-filter-toggle {
+  display: none;
+}
+
+/* On desktop this wrapper must not appear as a box of its own -- its
+   buttons need to keep behaving as direct children of the flex-wrap row
+   above them, exactly as if this element weren't there at all. */
+.att-filters-collapsible {
+  display: contents;
+}
+
 .att-month-select-btn {
   display: flex;
   align-items: center;
@@ -78,8 +97,19 @@
    selector still applies when nothing here contests that specific
    property. Left uncontested, width:100% makes each <select> try to fill
    the whole combo button, so the two selects and the chevron overlap and
-   only the last one in the DOM is actually clickable. */
-.att-month-select-native {
+   only the last one in the DOM is actually clickable.
+
+   Scoped under .att-report-controls (not just the bare class): this page
+   also pulls in AttendanceManagement.css (for the attlog-* table classes,
+   see the import at the top of AttendanceRecords.jsx), which happens to
+   define its own same-named .att-month-select-native/.att-btn/etc. for the
+   admin page's unrelated filter bar. Both rules then have identical
+   specificity, so which one wins came down to which stylesheet Vite
+   happened to inject last -- unpredictable, and it's what caused filter
+   buttons to intermittently render with the wrong colors. The extra class
+   here isn't decorative -- it's what keeps this page's buttons immune to
+   that collision regardless of import/HMR order. */
+.att-report-controls .att-month-select-native {
   appearance: none;
   -webkit-appearance: none;
   border: none !important;
@@ -119,8 +149,11 @@
 
 /* ── Unified button: every filter/action control (month+year, clear,
    export, quick-status-filters) shares this exact box so they all line up
-   at the same height/size. ── */
-.att-btn {
+   at the same height/size. Scoped under .att-report-controls -- see the
+   note above .att-month-select-native for why: AttendanceManagement.css
+   defines its own unrelated .att-btn for the admin page, and an unscoped
+   bare .att-btn here ties with it on specificity. ── */
+.att-report-controls .att-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -138,50 +171,74 @@
   transition: all 0.15s ease;
 }
 
-.att-btn:hover:not(:disabled) {
+.att-report-controls .att-btn:hover:not(:disabled) {
   border-color: #cbd5e1;
   background: #f8fafc;
 }
 
-.att-btn:disabled {
+.att-report-controls .att-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-.att-btn-solid {
+/* Scoped under .att-report-controls, same as .att-btn just above -- these
+   need at least its two-class specificity to actually override it, not
+   just tie with it and lose on source order. Export stays a plain white
+   button with dark text, same look as Clear right next to it, rather than
+   the solid blue + white text a "solid" button would normally get. */
+.att-report-controls .att-btn-solid {
+  background: #ffffff;
+  color: #334155;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.att-report-controls .att-btn-solid:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+/* Shared by the mobile Filter toggle and the 4 status-filter buttons
+   (Present/Absent/Late/On Time) -- the status filters keep the solid blue
+   + white text below; the toggle's own rule further down overrides both
+   back to white/dark, since only it and Export were asked to stay that
+   way. */
+.att-report-controls .att-btn-active {
   background: #0074f1;
   color: #ffffff;
   border-color: #0074f1;
-  box-shadow: 0 2px 8px rgba(0, 116, 241, 0.3);
 }
 
-.att-btn-solid:hover:not(:disabled) {
+.att-report-controls .att-btn-active:hover:not(:disabled) {
   background: #0060c7;
   border-color: #0060c7;
   color: #ffffff;
 }
 
-.att-btn-active {
-  background: #0074f1;
-  color: #ffffff;
-  border-color: #0074f1;
+.att-report-controls .att-mobile-filter-toggle.att-btn-active {
+  background: #ffffff;
+  color: #334155;
+  border-color: #e2e8f0;
 }
 
-.att-btn-active:hover:not(:disabled) {
-  background: #0060c7;
-  border-color: #0060c7;
-  color: #ffffff;
+.att-report-controls .att-mobile-filter-toggle.att-btn-active:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #334155;
+  border-color: #cbd5e1;
 }
 
-.att-month-year-combo {
+/* Both also scoped under .att-report-controls -- same AttendanceManagement.css
+   collision as .att-btn/.att-month-select-native above. */
+.att-report-controls .att-month-year-combo {
   position: relative;
 }
 
-.att-month-year-combo select {
+.att-report-controls .att-month-year-combo select {
   max-width: 108px;
 }
 
-.att-month-year-divider {
+.att-report-controls .att-month-year-divider {
   width: 1px;
   height: 16px;
   background: #e2e8f0;
@@ -1602,25 +1659,67 @@ input.att-filter-select[type="date"]::-webkit-calendar-picker-indicator:hover,
     gap: 6px;
   }
 
+  /* Records tab's controls: the 4 status filters + month/year + Clear
+     start collapsed behind the "Filter" toggle (att-mobile-filter-toggle),
+     which pairs up with Export in a 2-column row. The Reports tab's
+     controls (just month label + Export) fall into the same grid and
+     naturally end up as one paired row -- no special-casing needed there. */
   .att-report-controls {
     width: 100%;
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
-    justify-content: space-between;
   }
 
-  .att-month-select-btn,
-  .att-export-btn {
-    flex: 1;
+  .att-report-controls .att-btn,
+  .att-report-controls .att-month-select-btn,
+  .att-report-controls .att-export-btn {
+    width: 100%;
     justify-content: center;
     font-size: 12px;
     padding: 8px 10px;
   }
 
-  /* Metric cards */
+  /* Pinned to row 1 by explicit grid-row/column (not just DOM order), so
+     expanding .att-filters-collapsible below -- which comes after this
+     button in the markup -- can never push Export down with it. Same
+     three-class specificity as the base display:none rule above, so this
+     override reliably wins inside the media query. */
+  .att-report-controls .att-btn.att-mobile-filter-toggle {
+    display: inline-flex;
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .att-report-controls .att-btn-solid {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .att-filters-collapsible {
+    display: none;
+    grid-row: 2;
+    grid-column: 1 / -1;
+  }
+
+  .att-filters-collapsible.open {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .att-report-controls .att-month-year-combo {
+    grid-column: 1 / -1;
+  }
+
+  /* Metric cards: 2-2 pair, 5th card (Leave) spans the full row */
   .att-metrics-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
+  }
+
+  .att-metric-card:nth-child(5) {
+    grid-column: 1 / -1;
   }
 
   .att-metric-card {
@@ -1632,8 +1731,9 @@ input.att-filter-select[type="date"]::-webkit-calendar-picker-indicator:hover,
     font-size: 20px;
   }
 
+  /* 6 KPI cards: 3-3 pair */
   .att-records-kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 10px;
   }
 
@@ -1712,14 +1812,56 @@ input.att-filter-select[type="date"]::-webkit-calendar-picker-indicator:hover,
     padding: 8px 6px 20px;
   }
 
+  /* Metric cards: still 2-2 pair with the 5th spanning full width, just
+     tighter so two comfortably fit a phone's width. */
   .att-metrics-grid {
-    grid-template-columns: 1fr;
     gap: 8px;
   }
 
+  .att-metric-card {
+    padding: 12px 10px;
+    gap: 10px;
+  }
+
+  .att-metric-icon-circle {
+    width: 36px;
+    height: 36px;
+  }
+
+  .att-metric-value {
+    font-size: 18px;
+  }
+
+  .att-metric-sub {
+    font-size: 10.5px;
+  }
+
+  /* KPI cards: still 3-3 pair, shrunk to fit three per row on a phone. */
   .att-records-kpi-grid {
-    grid-template-columns: 1fr;
     gap: 8px;
+  }
+
+  .att-kpi-card {
+    padding: 10px 8px;
+    gap: 8px;
+  }
+
+  .att-kpi-icon-wrap {
+    width: 30px;
+    height: 30px;
+  }
+
+  .att-kpi-icon-wrap svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .att-kpi-val {
+    font-size: 15px;
+  }
+
+  .att-kpi-label {
+    font-size: 10px;
   }
 
   .att-wh-mini-cards {

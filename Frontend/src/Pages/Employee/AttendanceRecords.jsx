@@ -4,6 +4,7 @@ import {
   BarChart3,
   Calendar,
   Download,
+  Filter,
   Clock,
   CheckCircle2,
   Home,
@@ -126,6 +127,10 @@ export default function AttendanceRecords() {
   const [selectedMonthNum, setSelectedMonthNum] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [statusFilter, setStatusFilter] = useState(null); // null | "present" | "absent" | "late" | "ontime"
+  // Mobile-only: the status/date filters start collapsed behind a single
+  // "Filter" toggle button (see att-mobile-filter-toggle) -- desktop always
+  // shows them inline regardless of this, purely via CSS.
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [data, setData] = useState(null); // { records, total }
   const [stats, setStats] = useState(null); // category counts for the selected month
 
@@ -571,69 +576,87 @@ export default function AttendanceRecords() {
             </>
           ) : (
             <>
-              {/* Quick status filters -- sit to the left of the date filter,
-                  same line. */}
-              {[
-                { key: "present", label: "Present" },
-                { key: "absent", label: "Absent" },
-                { key: "late", label: "Late" },
-                { key: "ontime", label: "On Time" },
-              ].map((f) => (
-                <button
-                  key={f.key}
-                  type="button"
-                  className={`att-btn ${statusFilter === f.key ? "att-btn-active" : ""}`}
-                  onClick={() => setStatusFilter((prev) => (prev === f.key ? null : f.key))}
-                >
-                  {f.label}
-                </button>
-              ))}
-
-              {/* Month + Year combined into a single button-styled control.
-                  Both selects always render -- "All Months"/"All Years" are
-                  real options in them, not a separate state that hides the
-                  controls, so picking a specific date again after clearing
-                  never requires anything but this same dropdown. */}
-              <div className="att-btn att-month-year-combo" title="Filter by month and year">
-                <Calendar size={16} color="#0074F1" />
-                <select
-                  className="att-month-select-native"
-                  value={selectedMonthNum ?? ""}
-                  onChange={(e) => setSelectedMonthNum(e.target.value === "" ? null : Number(e.target.value))}
-                >
-                  <option value="">All Months</option>
-                  {MONTH_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-                <span className="att-month-year-divider" />
-                <select
-                  className="att-month-select-native"
-                  value={selectedYear ?? ""}
-                  onChange={(e) => setSelectedYear(e.target.value === "" ? null : Number(e.target.value))}
-                >
-                  <option value="">All Years</option>
-                  {YEAR_OPTIONS.map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={14} color="#64748b" />
-              </div>
-
+              {/* Mobile-only: toggles the filter group below. Hidden on
+                  desktop via CSS, where the filters already show inline. */}
               <button
                 type="button"
-                className="att-btn"
-                onClick={handleClearFilters}
-                disabled={!hasAnyFilter}
-                title="Clear all filters"
+                className={`att-btn att-mobile-filter-toggle ${hasAnyFilter ? "att-btn-active" : ""}`}
+                onClick={() => setShowMobileFilters((prev) => !prev)}
+                aria-expanded={showMobileFilters}
               >
-                <X size={15} />
-                <span>Clear</span>
+                <Filter size={15} />
+                <span>Filter{hasAnyFilter ? "s Active" : ""}</span>
+                <ChevronDown
+                  size={14}
+                  style={{ transform: showMobileFilters ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }}
+                />
               </button>
+
+              <div className={`att-filters-collapsible ${showMobileFilters ? "open" : ""}`}>
+                {/* Quick status filters -- sit to the left of the date filter,
+                    same line (desktop) / same collapsible group (mobile). */}
+                {[
+                  { key: "present", label: "Present" },
+                  { key: "absent", label: "Absent" },
+                  { key: "late", label: "Late" },
+                  { key: "ontime", label: "On Time" },
+                ].map((f) => (
+                  <button
+                    key={f.key}
+                    type="button"
+                    className={`att-btn ${statusFilter === f.key ? "att-btn-active" : ""}`}
+                    onClick={() => setStatusFilter((prev) => (prev === f.key ? null : f.key))}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+
+                {/* Month + Year combined into a single button-styled control.
+                    Both selects always render -- "All Months"/"All Years" are
+                    real options in them, not a separate state that hides the
+                    controls, so picking a specific date again after clearing
+                    never requires anything but this same dropdown. */}
+                <div className="att-btn att-month-year-combo" title="Filter by month and year">
+                  <Calendar size={16} color="#0074F1" />
+                  <select
+                    className="att-month-select-native"
+                    value={selectedMonthNum ?? ""}
+                    onChange={(e) => setSelectedMonthNum(e.target.value === "" ? null : Number(e.target.value))}
+                  >
+                    <option value="">All Months</option>
+                    {MONTH_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="att-month-year-divider" />
+                  <select
+                    className="att-month-select-native"
+                    value={selectedYear ?? ""}
+                    onChange={(e) => setSelectedYear(e.target.value === "" ? null : Number(e.target.value))}
+                  >
+                    <option value="">All Years</option>
+                    {YEAR_OPTIONS.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} color="#64748b" />
+                </div>
+
+                <button
+                  type="button"
+                  className="att-btn"
+                  onClick={handleClearFilters}
+                  disabled={!hasAnyFilter}
+                  title="Clear all filters"
+                >
+                  <X size={15} />
+                  <span>Clear</span>
+                </button>
+              </div>
 
               <button
                 type="button"
