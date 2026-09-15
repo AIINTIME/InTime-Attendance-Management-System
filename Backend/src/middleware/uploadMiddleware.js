@@ -73,6 +73,7 @@ function persistProfilePhoto(req, res, next) {
     fs.writeFileSync(destPath, req.file.buffer);
 
     req.uploadedFilePath = `/uploads/profile/${filename}`;
+    req.uploadedDataUrl = `data:${realMime};base64,${req.file.buffer.toString("base64")}`;
     next();
   } catch (err) {
     next(err);

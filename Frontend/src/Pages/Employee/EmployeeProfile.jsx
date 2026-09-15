@@ -5,6 +5,7 @@ import {
   Mail,
   Phone,
   CreditCard,
+  Briefcase,
   User,
   Fingerprint,
   Plus,
@@ -15,11 +16,13 @@ import {
   Smartphone,
   Monitor,
   Trash2,
+  X,
 } from "lucide-react";
 import { useAuth } from "../../Context/AuthContext";
 import { useToast } from "../../Context/ToastContext";
 import {
   uploadMyProfilePhoto,
+  deleteMyProfilePhoto,
   updateMyProfile,
 } from "../../Services/employeeService";
 import {
@@ -44,6 +47,8 @@ export default function EmployeeProfile() {
   const fileInputRef = useRef(null);
 
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [registeringPasskey, setRegisteringPasskey] = useState(false);
   const [passkeys, setPasskeys] = useState(null);
 
@@ -86,6 +91,23 @@ export default function EmployeeProfile() {
       toast.error(extractErrorMessage(err));
     } finally {
       setUploading(false);
+      // Reset input so the same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // Handle Profile Photo Delete
+  const handleDeletePhoto = async () => {
+    setDeleting(true);
+    try {
+      await deleteMyProfilePhoto();
+      updateUser({ profilePhoto: "" });
+      toast.success("Profile photo removed.");
+      setShowDeleteConfirm(false);
+    } catch (err) {
+      toast.error(extractErrorMessage(err));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -219,26 +241,43 @@ export default function EmployeeProfile() {
 
           {/* Avatar Center */}
           <div className="emp-profile-avatar-sec">
-            <div className="emp-avatar-frame">
-              {photoUrl ? (
-                <img src={photoUrl} alt={user?.name} className="emp-avatar-img" />
-              ) : (
-                <div className="emp-avatar-fallback">
-                  {initials(user?.name || "Soudip Panja")}
-                </div>
-              )}
+            <div className="emp-avatar-wrap">
+              <div className="emp-avatar-frame">
+                {photoUrl ? (
+                  <img src={photoUrl} alt={user?.name} className="emp-avatar-img" />
+                ) : (
+                  <div className="emp-avatar-fallback">
+                    {initials(user?.name || "Soudip Panja")}
+                  </div>
+                )}
+              </div>
 
-              {/* Overlapping Camera Trigger */}
+              {/* Camera Upload Button */}
               <button
                 type="button"
                 className="emp-camera-trigger"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
+                disabled={uploading || deleting}
                 title="Change profile photo"
                 aria-label="Change profile photo"
               >
                 <Camera size={16} />
               </button>
+
+              {/* Delete Photo Button — only shown when photo exists */}
+              {photoUrl && (
+                <button
+                  type="button"
+                  className="emp-delete-photo-trigger"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={uploading || deleting}
+                  title="Remove profile photo"
+                  aria-label="Remove profile photo"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -266,7 +305,16 @@ export default function EmployeeProfile() {
               <span className="emp-detail-val">{user?.employeeId || "EMP1024"}</span>
             </div>
 
-            {/* 2. Organization Email */}
+            {/* 2. Designation */}
+            <div className="emp-detail-row">
+              <div className="emp-detail-label-group">
+                <Briefcase size={18} />
+                <span>Designation</span>
+              </div>
+              <span className="emp-detail-val">{user?.designation || "—"}</span>
+            </div>
+
+            {/* 3. Organization Email */}
             <div className="emp-detail-row">
               <div className="emp-detail-label-group">
                 <Mail size={18} />
@@ -275,13 +323,13 @@ export default function EmployeeProfile() {
               <span className="emp-detail-val">{user?.email || "soudip.panja@intime.com"}</span>
             </div>
 
-            {/* 3. Phone Number */}
+            {/* 4. Phone Number */}
             <div className="emp-detail-row">
               <div className="emp-detail-label-group">
                 <Phone size={18} />
                 <span>Phone Number</span>
               </div>
-              <span className="emp-detail-val">{user?.phone || "+91 98765 43210"}</span>
+              <span className="emp-detail-val">{formatDisplayPhone(user?.phone, user?.countryCode)}</span>
             </div>
           </div>
         </div>
@@ -442,6 +490,7 @@ export default function EmployeeProfile() {
         initialData={{
           name: user?.name,
           phone: user?.phone,
+          countryCode: user?.countryCode,
         }}
         onSave={handleSaveProfile}
         loading={savingProfile}
@@ -452,6 +501,59 @@ export default function EmployeeProfile() {
         isOpen={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
       />
+
+      {/* ── Delete Photo Confirm Modal ── */}
+      {showDeleteConfirm && (
+        <div
+          className="emp-modal-overlay"
+          onClick={() => !deleting && setShowDeleteConfirm(false)}
+        >
+          <div
+            className="emp-modal-card"
+            style={{ maxWidth: 400 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="emp-modal-header">
+              <h3 style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 17 }}>
+                <Trash2 size={18} color="#EF4444" />
+                Remove Photo
+              </h3>
+              <button
+                type="button"
+                className="emp-modal-close"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ padding: "4px 0 20px", fontSize: 13.5, color: "#475569", lineHeight: 1.65 }}>
+              Are you sure you want to remove your profile photo? Your initials will be shown instead.
+            </div>
+
+            <div className="emp-form-actions">
+              <button
+                type="button"
+                className="emp-btn-cancel"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="emp-btn-danger"
+                onClick={handleDeletePhoto}
+                disabled={deleting}
+              >
+                {deleting ? "Removing…" : "Remove Photo"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -460,8 +562,12 @@ export default function EmployeeProfile() {
    Helpers
 ────────────────────────────────────────────────────────────────── */
 function resolveUploadUrl(path) {
+  if (!path) return "";
+  if (path.startsWith("data:") || path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
   const base = API_URL.replace(/\/api\/?$/, "");
-  return `${base}${path}`;
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 function initials(name) {
@@ -472,6 +578,37 @@ function initials(name) {
     .slice(0, 2)
     .join("")
     .toUpperCase();
+}
+
+/** Format stored phone with country code (e.g. "+91 8420903019") */
+const KNOWN_CODES = [
+  "+971", "+353", "+852",
+  "+61", "+65", "+60", "+81", "+86", "+49", "+33", "+55", "+27",
+  "+44", "+91", "+1", "+7",
+];
+
+function formatDisplayPhone(rawPhone, rawCountryCode) {
+  if (!rawPhone && !rawCountryCode) return "—";
+  if (!rawPhone) return "—";
+
+  let digits = String(rawPhone).replace(/\D/g, "");
+  let code = rawCountryCode || "+91";
+
+  for (const c of KNOWN_CODES) {
+    const num = c.replace("+", "");
+    if (String(rawPhone).startsWith(c)) {
+      code = c;
+      digits = String(rawPhone).slice(c.length).replace(/\D/g, "");
+      break;
+    } else if (digits.length > 10 && digits.startsWith(num)) {
+      code = c;
+      digits = digits.slice(num.length);
+      break;
+    }
+  }
+
+  if (!digits) return "—";
+  return `${code} ${digits}`;
 }
 
 function formatPrettyDate(dateInput) {

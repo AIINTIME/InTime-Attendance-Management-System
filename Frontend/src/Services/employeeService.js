@@ -22,3 +22,7 @@ export async function uploadMyProfilePhoto(file) {
   });
   return data.data.profilePhoto;
 }
+
+export async function deleteMyProfilePhoto() {
+  await api.delete("/employees/me/profile-photo");
+}

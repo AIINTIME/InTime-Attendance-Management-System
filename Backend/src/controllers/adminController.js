@@ -177,12 +177,14 @@ const createEmployeeValidators = [
   body("department").trim().notEmpty().withMessage("Department is required."),
   body("designation").trim().notEmpty().withMessage("Designation is required."),
   body("phone").optional({ checkFalsy: true }).trim(),
+  body("countryCode").optional().trim(),
+  body("profilePhoto").optional(),
 ];
 
 async function createEmployee(req, res, next) {
   try {
     assertValid(req);
-    const { name, email, department, designation, phone } = req.body;
+    const { name, email, department, designation, phone, countryCode, profilePhoto } = req.body;
 
     const existing = await prisma.employee.findUnique({ where: { email: email.toLowerCase() } });
     if (existing) {
@@ -204,6 +206,8 @@ async function createEmployee(req, res, next) {
             department,
             designation,
             phone: phone || "",
+            countryCode: countryCode || "+91",
+            profilePhoto: profilePhoto || "",
             passwordHash,
             mustChangePassword: true,
           },
@@ -265,6 +269,8 @@ const updateEmployeeValidators = [
   body("department").optional().trim().notEmpty(),
   body("designation").optional().trim().notEmpty(),
   body("phone").optional({ checkFalsy: true }).trim(),
+  body("countryCode").optional().trim(),
+  body("profilePhoto").optional(),
 ];
 
 async function updateEmployee(req, res, next) {
@@ -273,12 +279,14 @@ async function updateEmployee(req, res, next) {
     const existing = await prisma.employee.findUnique({ where: { id: req.params.id } });
     if (!existing) throw new ApiError(404, "Employee not found.", "NOT_FOUND");
 
-    const { name, department, designation, phone } = req.body;
+    const { name, department, designation, phone, countryCode, profilePhoto } = req.body;
     const data = {};
     if (name) data.name = name;
     if (department) data.department = department;
     if (designation) data.designation = designation;
     if (phone !== undefined) data.phone = phone;
+    if (countryCode !== undefined) data.countryCode = countryCode;
+    if (profilePhoto !== undefined) data.profilePhoto = profilePhoto;
 
     const employee = await prisma.employee.update({ where: { id: existing.id }, data });
 

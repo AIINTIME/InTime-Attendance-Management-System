@@ -22,5 +22,6 @@ router.post(
   persistProfilePhoto,
   employeeController.uploadProfilePhoto
 );
+router.delete("/me/profile-photo", employeeController.deleteProfilePhoto);
 
 module.exports = router;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Plus,
   Pencil,
@@ -8,6 +8,7 @@ import {
   KeyRound,
   Copy,
   Check,
+  Camera,
 } from "lucide-react";
 import { useToast } from "../../Context/ToastContext";
 import {
@@ -49,6 +50,23 @@ const INITIALS_PALETTE = [
   { bg: "#FFE4E6", color: "#BE123C" },
 ];
 
+const COUNTRY_CODES = [
+  { code: "+91",  label: "🇮🇳 +91 (India)" },
+  { code: "+1",   label: "🇺🇸 +1 (USA / Canada)" },
+  { code: "+44",  label: "🇬🇧 +44 (UK)" },
+  { code: "+61",  label: "🇦🇺 +61 (Australia)" },
+  { code: "+971", label: "🇦🇪 +971 (UAE)" },
+  { code: "+65",  label: "🇸🇬 +65 (Singapore)" },
+  { code: "+60",  label: "🇲🇾 +60 (Malaysia)" },
+  { code: "+81",  label: "🇯🇵 +81 (Japan)" },
+  { code: "+86",  label: "🇨🇳 +86 (China)" },
+  { code: "+49",  label: "🇩🇪 +49 (Germany)" },
+  { code: "+33",  label: "🇫🇷 +33 (France)" },
+  { code: "+7",   label: "🇷🇺 +7 (Russia)" },
+  { code: "+55",  label: "🇧🇷 +55 (Brazil)" },
+  { code: "+27",  label: "🇿🇦 +27 (South Africa)" },
+];
+
 function initialsStyleFor(name) {
   const letter = (name || "?").trim().charAt(0).toUpperCase();
   const index = letter.charCodeAt(0) % INITIALS_PALETTE.length;
@@ -57,8 +75,35 @@ function initialsStyleFor(name) {
 
 function photoUrl(path) {
   if (!path) return "";
-  if (path.startsWith("http")) return path;
-  return `${API_URL.replace(/\/api\/?$/, "")}${path}`;
+  if (path.startsWith("data:") || path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  const base = API_URL.replace(/\/api\/?$/, "");
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function formatPhoneDisplay(rawPhone, rawCountryCode) {
+  if (!rawPhone && !rawCountryCode) return "—";
+  if (!rawPhone) return "—";
+
+  let digits = String(rawPhone).replace(/\D/g, "");
+  let code = rawCountryCode || "+91";
+
+  for (const c of COUNTRY_CODES) {
+    const num = c.code.replace("+", "");
+    if (String(rawPhone).startsWith(c.code)) {
+      code = c.code;
+      digits = String(rawPhone).slice(c.code.length).replace(/\D/g, "");
+      break;
+    } else if (digits.length > 10 && digits.startsWith(num)) {
+      code = c.code;
+      digits = digits.slice(num.length);
+      break;
+    }
+  }
+
+  if (!digits) return "—";
+  return `${code} ${digits}`;
 }
 
 const EMPTY_FORM = {
@@ -66,7 +111,9 @@ const EMPTY_FORM = {
   department: DEPARTMENTS[0],
   designation: "",
   email: "",
+  countryCode: "+91",
   phone: "",
+  profilePhoto: "",
 };
 
 export default function EmployeeManagement() {
@@ -102,6 +149,22 @@ export default function EmployeeManagement() {
     }
   }
 
+  const fileInputRef = useRef(null);
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error("Profile image must be less than 3MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setForm((prev) => ({ ...prev, profilePhoto: event.target.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Open Add Modal
   const handleOpenAddModal = () => {
     setForm(EMPTY_FORM);
@@ -111,8 +174,12 @@ export default function EmployeeManagement() {
   // Handle Add Submit
   const handleAddSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim() || !form.designation.trim()) {
-      toast.error("Please fill in the required fields (Name, Email and Designation).");
+    if (!form.name.trim() || !form.email.trim() || !form.designation.trim() || !form.department.trim()) {
+      toast.error("Please fill in the required fields (Name, Department, Designation and Email).");
+      return;
+    }
+    if (form.phone && form.phone.length !== 10) {
+      toast.error("Phone number must be exactly 10 digits.");
       return;
     }
 
@@ -123,7 +190,9 @@ export default function EmployeeManagement() {
         email: form.email.trim(),
         department: form.department,
         designation: form.designation.trim(),
+        countryCode: form.countryCode || "+91",
         phone: form.phone.trim(),
+        profilePhoto: form.profilePhoto || "",
       });
 
       setEmployees((prev) => [employee, ...prev]);
@@ -146,33 +215,52 @@ export default function EmployeeManagement() {
   // Open Edit Modal
   const handleOpenEditModal = (emp) => {
     setEditingEmployee(emp);
+    let code = emp.countryCode || "+91";
+    let digits = (emp.phone || "").replace(/\D/g, "");
+    for (const c of COUNTRY_CODES) {
+      if (emp.phone && emp.phone.startsWith(c.code)) {
+        code = c.code;
+        digits = emp.phone.slice(c.code.length).replace(/\D/g, "");
+        break;
+      }
+    }
+    if (digits.length > 10) digits = digits.slice(-10);
+
     setForm({
       name: emp.name,
       department: emp.department,
       designation: emp.designation || "",
       email: emp.email,
-      phone: emp.phone || "",
+      countryCode: code,
+      phone: digits,
+      profilePhoto: emp.profilePhoto || "",
     });
   };
 
   // Handle Edit Submit
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.designation.trim()) {
-      toast.error("Please fill in the required fields (Name and Designation).");
+    if (!form.name.trim() || !form.designation.trim() || !form.department.trim()) {
+      toast.error("Please fill in the required fields (Name, Department and Designation).");
+      return;
+    }
+    if (form.phone && form.phone.length !== 10) {
+      toast.error("Phone number must be exactly 10 digits.");
       return;
     }
 
     setSaving(true);
     try {
-      const updated = await updateEmployee(editingEmployee._id, {
+      const updated = await updateEmployee(editingEmployee.id, {
         name: form.name.trim(),
         department: form.department,
         designation: form.designation.trim(),
+        countryCode: form.countryCode || "+91",
         phone: form.phone.trim(),
+        profilePhoto: form.profilePhoto || "",
       });
 
-      setEmployees((prev) => prev.map((emp) => (emp._id === updated._id ? updated : emp)));
+      setEmployees((prev) => prev.map((emp) => (emp.id === updated.id ? updated : emp)));
       toast.success(`Updated ${updated.name} successfully.`);
       setEditingEmployee(null);
       setForm(EMPTY_FORM);
@@ -188,8 +276,8 @@ export default function EmployeeManagement() {
     if (!deletingEmployee) return;
     setSaving(true);
     try {
-      await setEmployeeStatus(deletingEmployee._id, false);
-      setEmployees((prev) => prev.filter((e) => e._id !== deletingEmployee._id));
+      await setEmployeeStatus(deletingEmployee.id, false);
+      setEmployees((prev) => prev.filter((e) => e.id !== deletingEmployee.id));
       toast.success(`${deletingEmployee.name} has been removed.`);
       setDeletingEmployee(null);
     } catch (err) {
@@ -204,7 +292,7 @@ export default function EmployeeManagement() {
     if (!resetPasswordEmployee) return;
     setSaving(true);
     try {
-      await resetEmployeePassword(resetPasswordEmployee._id);
+      await resetEmployeePassword(resetPasswordEmployee.id);
       setCopied(false);
       setCredentials({
         employeeId: resetPasswordEmployee.employeeId,
@@ -291,7 +379,7 @@ export default function EmployeeManagement() {
                   const initials = initialsStyleFor(emp.name);
 
                   return (
-                    <tr key={emp._id}>
+                    <tr key={emp.id}>
                       <td className="emp-index-cell" style={{ paddingLeft: 24 }}>{globalIndex}</td>
 
                       {/* Employee with avatar or initials */}
@@ -338,7 +426,7 @@ export default function EmployeeManagement() {
                       </td>
                       <td className="emp-email-text">{emp.designation}</td>
                       <td className="emp-email-text">{emp.email}</td>
-                      <td className="emp-phone-text">{emp.phone || "—"}</td>
+                      <td className="emp-phone-text">{formatPhoneDisplay(emp.phone, emp.countryCode)}</td>
 
                       {/* Actions Column */}
                       <td>
@@ -400,8 +488,53 @@ export default function EmployeeManagement() {
 
             <form onSubmit={handleAddSubmit}>
               <div className="emp-modal-form">
+                {/* Profile Photo Picker */}
+                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12, padding: "10px 14px", background: "#F8FAFC", borderRadius: 10, border: "1px solid #E2E8F0" }}>
+                  <div style={{ position: "relative", width: 44, height: 44, borderRadius: "50%", overflow: "hidden", background: "#E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {form.profilePhoto ? (
+                      <img src={photoUrl(form.profilePhoto)} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span style={{ fontSize: 17, fontWeight: 600, color: "#64748B" }}>
+                        {form.name ? form.name.trim().charAt(0).toUpperCase() : <Camera size={18} color="#94A3B8" />}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#1E293B" }}>Employee Profile Photo</div>
+                      <div style={{ fontSize: 11.5, color: "#64748B", marginTop: 1 }}>Stored directly in database (JPG, PNG, WEBP)</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        style={{ padding: "4px 10px", fontSize: 12, fontWeight: 500, borderRadius: 6, border: "1px solid #CBD5E1", background: "#FFFFFF", cursor: "pointer" }}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        {form.profilePhoto ? "Change Photo" : "Upload Photo"}
+                      </button>
+                      {form.profilePhoto && (
+                        <button
+                          type="button"
+                          style={{ padding: "4px 10px", fontSize: 12, fontWeight: 500, borderRadius: 6, border: "1px solid #FCA5A5", background: "#FEF2F2", color: "#DC2626", cursor: "pointer" }}
+                          onClick={() => setForm((prev) => ({ ...prev, profilePhoto: "" }))}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp"
+                  style={{ display: "none" }}
+                  onChange={handleImageSelect}
+                />
+
                 <div className="emp-form-grid">
-                  <div className="emp-form-group full">
+                  <div className="emp-form-group">
                     <label className="emp-form-label">Full Name *</label>
                     <input
                       type="text"
@@ -416,9 +549,10 @@ export default function EmployeeManagement() {
                   </div>
 
                   <div className="emp-form-group">
-                    <label className="emp-form-label">Department</label>
+                    <label className="emp-form-label">Department *</label>
                     <select
                       className="emp-form-select"
+                      required
                       value={form.department}
                       onChange={(e) =>
                         setForm({ ...form, department: e.target.value })
@@ -460,27 +594,55 @@ export default function EmployeeManagement() {
                     />
                   </div>
 
-                  <div className="emp-form-group">
+                  <div className="emp-form-group span2">
                     <label className="emp-form-label">Phone Number</label>
-                    <input
-                      type="text"
-                      className="emp-form-input"
-                      placeholder="+91 98765 43210"
-                      value={form.phone}
-                      onChange={(e) =>
-                        setForm({ ...form, phone: e.target.value })
-                      }
-                    />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <select
+                        className="emp-form-select"
+                        style={{ width: "135px", flexShrink: 0 }}
+                        value={form.countryCode}
+                        onChange={(e) => setForm({ ...form, countryCode: e.target.value })}
+                        aria-label="Country Code"
+                      >
+                        {COUNTRY_CODES.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.code} ({c.label.split(" ")[0]})
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={10}
+                        className="emp-form-input"
+                        placeholder="10-digit number"
+                        value={form.phone}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                          setForm({ ...form, phone: val });
+                        }}
+                      />
+                    </div>
+                    {form.phone && form.phone.length > 0 && form.phone.length < 10 && (
+                      <span style={{ fontSize: 11.5, color: "#EF4444", marginTop: 4, display: "block" }}>
+                        Phone number must be exactly 10 digits ({form.phone.length}/10).
+                      </span>
+                    )}
+                    {form.phone && form.phone.length === 10 && (
+                      <span style={{ fontSize: 11.5, color: "#16A34A", marginTop: 4, display: "block" }}>
+                        Will save as: <strong>{form.countryCode} {form.phone}</strong>
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 <div
                   style={{
-                    marginTop: 16,
+                    marginTop: 4,
                     background: "#F0F7FF",
                     border: "1px solid #DCEAFB",
                     borderRadius: 8,
-                    padding: "10px 14px",
+                    padding: "8px 14px",
                     fontSize: 12.5,
                     color: "#334155",
                   }}
@@ -529,8 +691,45 @@ export default function EmployeeManagement() {
 
             <form onSubmit={handleEditSubmit}>
               <div className="emp-modal-form">
+                {/* Profile Photo Picker */}
+                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12, padding: "10px 14px", background: "#F8FAFC", borderRadius: 10, border: "1px solid #E2E8F0" }}>
+                  <div style={{ position: "relative", width: 44, height: 44, borderRadius: "50%", overflow: "hidden", background: "#E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {form.profilePhoto ? (
+                      <img src={photoUrl(form.profilePhoto)} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span style={{ fontSize: 17, fontWeight: 600, color: "#64748B" }}>
+                        {form.name ? form.name.trim().charAt(0).toUpperCase() : <Camera size={18} color="#94A3B8" />}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#1E293B" }}>Employee Profile Photo</div>
+                      <div style={{ fontSize: 11.5, color: "#64748B", marginTop: 1 }}>Stored directly in database (JPG, PNG, WEBP)</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        style={{ padding: "4px 10px", fontSize: 12, fontWeight: 500, borderRadius: 6, border: "1px solid #CBD5E1", background: "#FFFFFF", cursor: "pointer" }}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        {form.profilePhoto ? "Change Photo" : "Upload Photo"}
+                      </button>
+                      {form.profilePhoto && (
+                        <button
+                          type="button"
+                          style={{ padding: "4px 10px", fontSize: 12, fontWeight: 500, borderRadius: 6, border: "1px solid #FCA5A5", background: "#FEF2F2", color: "#DC2626", cursor: "pointer" }}
+                          onClick={() => setForm((prev) => ({ ...prev, profilePhoto: "" }))}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="emp-form-grid">
-                  <div className="emp-form-group full">
+                  <div className="emp-form-group">
                     <label className="emp-form-label">Full Name *</label>
                     <input
                       type="text"
@@ -554,9 +753,10 @@ export default function EmployeeManagement() {
                   </div>
 
                   <div className="emp-form-group">
-                    <label className="emp-form-label">Department</label>
+                    <label className="emp-form-label">Department *</label>
                     <select
                       className="emp-form-select"
+                      required
                       value={form.department}
                       onChange={(e) =>
                         setForm({ ...form, department: e.target.value })
@@ -594,16 +794,45 @@ export default function EmployeeManagement() {
                     />
                   </div>
 
-                  <div className="emp-form-group">
+                  <div className="emp-form-group span2">
                     <label className="emp-form-label">Phone Number</label>
-                    <input
-                      type="text"
-                      className="emp-form-input"
-                      value={form.phone}
-                      onChange={(e) =>
-                        setForm({ ...form, phone: e.target.value })
-                      }
-                    />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <select
+                        className="emp-form-select"
+                        style={{ width: "135px", flexShrink: 0 }}
+                        value={form.countryCode}
+                        onChange={(e) => setForm({ ...form, countryCode: e.target.value })}
+                        aria-label="Country Code"
+                      >
+                        {COUNTRY_CODES.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.code} ({c.label.split(" ")[0]})
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={10}
+                        className="emp-form-input"
+                        placeholder="10-digit number"
+                        value={form.phone}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                          setForm({ ...form, phone: val });
+                        }}
+                      />
+                    </div>
+                    {form.phone && form.phone.length > 0 && form.phone.length < 10 && (
+                      <span style={{ fontSize: 11.5, color: "#EF4444", marginTop: 4, display: "block" }}>
+                        Phone number must be exactly 10 digits ({form.phone.length}/10).
+                      </span>
+                    )}
+                    {form.phone && form.phone.length === 10 && (
+                      <span style={{ fontSize: 11.5, color: "#16A34A", marginTop: 4, display: "block" }}>
+                        Will save as: <strong>{form.countryCode} {form.phone}</strong>
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

@@ -19,8 +19,7 @@ function toPublicEmployee(employee) {
     designation: employee.designation,
     profilePhoto: employee.profilePhoto,
     phone: employee.phone || "",
-    dateOfBirth: employee.dateOfBirth || null,
-    gender: employee.gender || "",
+    countryCode: employee.countryCode || "+91",
     passkeyRegistered: employee.passkeyRegistered,
     mustChangePassword: employee.mustChangePassword,
   };

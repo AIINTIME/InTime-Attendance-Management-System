@@ -20,19 +20,19 @@ async function getMe(req, res) {
 const updateMeValidators = [
   body("name").optional().trim().isLength({ min: 2 }).withMessage("Name is too short."),
   body("phone").optional().trim(),
-  body("dateOfBirth").optional().isISO8601().toDate().withMessage("Invalid date format."),
-  body("gender").optional().isIn(["Male", "Female", "Other", ""]).withMessage("Invalid gender."),
+  body("countryCode").optional().trim(),
+  body("profilePhoto").optional(),
 ];
 
 async function updateMe(req, res, next) {
   try {
     assertValid(req);
-    const { name, phone, dateOfBirth, gender } = req.body;
+    const { name, phone, countryCode, profilePhoto } = req.body;
     const data = {};
     if (name !== undefined) data.name = name;
     if (phone !== undefined) data.phone = phone;
-    if (dateOfBirth !== undefined) data.dateOfBirth = dateOfBirth;
-    if (gender !== undefined) data.gender = gender;
+    if (countryCode !== undefined) data.countryCode = countryCode;
+    if (profilePhoto !== undefined) data.profilePhoto = profilePhoto;
 
     const employee = await prisma.employee.update({ where: { id: req.employee.id }, data });
     res.json({ success: true, message: "Profile updated", data: { user: toPublicEmployee(employee) } });
@@ -74,14 +74,15 @@ async function changePassword(req, res, next) {
 
 async function uploadProfilePhoto(req, res, next) {
   try {
-    if (!req.uploadedFilePath) {
+    if (!req.uploadedFilePath && !req.uploadedDataUrl) {
       throw new ApiError(422, "A valid image file is required.", "NO_FILE");
     }
 
     const previousPhoto = req.employee.profilePhoto;
+    const photoToStore = req.uploadedDataUrl || req.uploadedFilePath;
     const employee = await prisma.employee.update({
       where: { id: req.employee.id },
-      data: { profilePhoto: req.uploadedFilePath },
+      data: { profilePhoto: photoToStore },
     });
 
     if (previousPhoto && previousPhoto.startsWith("/uploads/profile/")) {
@@ -92,7 +93,32 @@ async function uploadProfilePhoto(req, res, next) {
     res.json({
       success: true,
       message: "Profile photo updated",
-      data: { profilePhoto: employee.profilePhoto },
+      data: { profilePhoto: employee.profilePhoto, user: toPublicEmployee(employee) },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function deleteProfilePhoto(req, res, next) {
+  try {
+    const currentPhoto = req.employee.profilePhoto;
+
+    await prisma.employee.update({
+      where: { id: req.employee.id },
+      data: { profilePhoto: "" },
+    });
+
+    // Remove the file from disk
+    if (currentPhoto && currentPhoto.startsWith("/uploads/profile/")) {
+      const filePath = path.join(__dirname, "..", currentPhoto.replace("/uploads/", "uploads/"));
+      fs.unlink(filePath, () => {});
+    }
+
+    res.json({
+      success: true,
+      message: "Profile photo removed",
+      data: { profilePhoto: "" },
     });
   } catch (err) {
     next(err);
@@ -106,4 +132,5 @@ module.exports = {
   updateMe,
   changePassword,
   uploadProfilePhoto,
+  deleteProfilePhoto,
 };

@@ -30,8 +30,7 @@ model Employee {
   designation         String
   profilePhoto        String    @default("")
   phone               String    @default("")
-  dateOfBirth         DateTime?
-  gender              String    @default("")
+  countryCode         String    @default("+91")
   passkeyRegistered   Boolean   @default(false)
   mustChangePassword  Boolean   @default(false)
   isActive            Boolean   @default(true)

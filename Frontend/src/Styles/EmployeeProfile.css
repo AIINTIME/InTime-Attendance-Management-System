@@ -61,7 +61,7 @@
 ────────────────────────────────────────────────────────────────── */
 .emp-profile-grid {
   display: grid;
-  grid-template-columns: 380px minmax(0, 1fr);
+  grid-template-columns: 460px minmax(0, 1fr);
   gap: 22px;
   align-items: flex-start;
 }
@@ -178,20 +178,38 @@
   margin-bottom: 24px;
 }
 
-.emp-avatar-frame {
+.emp-avatar-wrap {
   position: relative;
   width: 132px;
   height: 132px;
   margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.emp-avatar-frame {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #ffffff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .emp-avatar-img {
-  width: 100%;
-  height: 100%;
+  width: 124px;
+  height: 124px;
+  min-width: 124px;
+  min-height: 124px;
+  max-width: none;
+  max-height: none;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid #ffffff;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  object-position: center;
+  display: block;
 }
 
 .emp-avatar-fallback {
@@ -205,8 +223,6 @@
   justify-content: center;
   font-size: 42px;
   font-weight: 800;
-  border: 4px solid #ffffff;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   letter-spacing: -1px;
 }
 
@@ -235,6 +251,58 @@
 
 .emp-camera-trigger:disabled {
   opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Delete photo button — red trash icon at bottom-left of avatar */
+.emp-delete-photo-trigger {
+  position: absolute;
+  bottom: 3px;
+  left: 3px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #EF4444;
+  color: #ffffff;
+  border: 3px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.4);
+  transition: all 0.2s ease;
+}
+
+.emp-delete-photo-trigger:hover {
+  background: #DC2626;
+  transform: scale(1.08);
+}
+
+.emp-delete-photo-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Danger (destructive) button */
+.emp-btn-danger {
+  height: 42px;
+  border-radius: 10px;
+  border: none;
+  background: #EF4444;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.emp-btn-danger:hover:not(:disabled) {
+  background: #DC2626;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.emp-btn-danger:disabled {
+  opacity: 0.65;
   cursor: not-allowed;
 }
 
@@ -734,6 +802,60 @@
 .emp-form-input:focus {
   border-color: #0074F1;
   box-shadow: 0 0 0 3px rgba(0, 116, 241, 0.12);
+}
+
+.emp-form-input.emp-input-error {
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* ── Phone Number Row ── */
+.emp-phone-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.emp-country-select {
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  padding: 0 10px;
+  font-size: 13px;
+  color: #0f172a;
+  background: #f8fafc;
+  box-sizing: border-box;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+  max-width: 170px;
+}
+
+.emp-country-select:focus {
+  border-color: #0074F1;
+  box-shadow: 0 0 0 3px rgba(0, 116, 241, 0.12);
+}
+
+.emp-phone-digits {
+  flex: 1;
+  min-width: 0;
+}
+
+.emp-field-error {
+  font-size: 11.5px;
+  color: #EF4444;
+  font-weight: 500;
+  display: block;
+  margin-top: 2px;
+}
+
+.emp-field-hint {
+  font-size: 11.5px;
+  color: #64748b;
+  display: block;
+  margin-top: 2px;
 }
 
 .emp-input-with-icon {
