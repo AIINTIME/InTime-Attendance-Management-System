@@ -45,10 +45,6 @@ const env = {
   OFFICE_END_TIME: required("OFFICE_END_TIME", "17:30"),
   SLIGHT_LATE_GRACE_MINUTES: Number(required("SLIGHT_LATE_GRACE_MINUTES", 15)),
   MIN_WORKING_HOURS: Number(required("MIN_WORKING_HOURS", 8)),
-
-  SEED_ADMIN_NAME: required("SEED_ADMIN_NAME", "Super Admin"),
-  SEED_ADMIN_EMAIL: required("SEED_ADMIN_EMAIL", ""),
-  SEED_ADMIN_PASSWORD: required("SEED_ADMIN_PASSWORD", ""),
 };
 
 if (env.NODE_ENV !== "test") {

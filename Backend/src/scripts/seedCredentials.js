@@ -25,21 +25,22 @@ async function seed() {
   console.log("[seed] Connected");
 
   // 1. Seed or update Admin
-  const adminEmail = "tanuka@intimeinc.co.in".toLowerCase().trim();
-  const adminPassword = "1234567890";
+  const adminEmail = (process.env.SEED_ADMIN_EMAIL || "tanuka@intimeinc.co.in").toLowerCase().trim();
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || "1234567890";
+  const adminName = process.env.SEED_ADMIN_NAME || "Tanuka";
   const adminPasswordHash = await hashPassword(adminPassword);
 
   let admin = await prisma.admin.findUnique({ where: { email: adminEmail } });
   if (admin) {
     admin = await prisma.admin.update({
       where: { id: admin.id },
-      data: { passwordHash: adminPasswordHash, mustChangePassword: false },
+      data: { name: adminName, passwordHash: adminPasswordHash, mustChangePassword: false },
     });
-    console.log(`[seed] Updated existing Admin: ${adminEmail}`);
+    console.log(`[seed] Updated existing Admin in 'Admin' table: ${adminEmail}`);
   } else {
     admin = await prisma.admin.create({
       data: {
-        name: "Tanuka",
+        name: adminName,
         email: adminEmail,
         passwordHash: adminPasswordHash,
         role: "admin",
@@ -47,28 +48,29 @@ async function seed() {
         mustChangePassword: false,
       },
     });
-    console.log(`[seed] Created new Admin: ${adminEmail}`);
+    console.log(`[seed] Created new Admin in 'Admin' table: ${adminEmail}`);
   }
 
   // 2. Seed or update Employee
-  const employeeEmail = "demo@gmail.com".toLowerCase().trim();
-  const employeePassword = "1234567890";
+  const employeeEmail = (process.env.SEED_EMPLOYEE_EMAIL || "demo@intimeinc.co.in").toLowerCase().trim();
+  const employeePassword = process.env.SEED_EMPLOYEE_PASSWORD || "1234567890";
+  const employeeName = process.env.SEED_EMPLOYEE_NAME || "Demo Employee";
   const employeePasswordHash = await hashPassword(employeePassword);
 
   let employee = await prisma.employee.findUnique({ where: { email: employeeEmail } });
   if (employee) {
     employee = await prisma.employee.update({
       where: { id: employee.id },
-      data: { passwordHash: employeePasswordHash, mustChangePassword: false, isActive: true },
+      data: { name: employeeName, passwordHash: employeePasswordHash, mustChangePassword: false, isActive: true },
     });
-    console.log(`[seed] Updated existing Employee: ${employeeEmail} (${employee.employeeId})`);
+    console.log(`[seed] Updated existing Employee in 'Employee' table: ${employeeEmail} (${employee.employeeId})`);
   } else {
     const nextEmployeeId = await generateNextEmployeeId();
 
     employee = await prisma.employee.create({
       data: {
         employeeId: nextEmployeeId,
-        name: "Demo Employee",
+        name: employeeName,
         email: employeeEmail,
         passwordHash: employeePasswordHash,
         department: "Engineering",
@@ -79,7 +81,7 @@ async function seed() {
         mustChangePassword: false,
       },
     });
-    console.log(`[seed] Created new Employee: ${employeeEmail} (${nextEmployeeId})`);
+    console.log(`[seed] Created new Employee in 'Employee' table: ${employeeEmail} (${nextEmployeeId})`);
   }
 
   // 3. Ensure OrgSettings exists
