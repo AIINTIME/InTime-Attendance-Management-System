@@ -2,7 +2,7 @@ const { body, validationResult } = require("express-validator");
 const prisma = require("../config/prisma");
 const { ApiError } = require("../middleware/errorMiddleware");
 const { hashPassword, comparePassword } = require("../utils/password");
-const { toPublicEmployee } = require("../services/authService");
+const { revokeUserSessions, toPublicEmployee } = require("../services/authService");
 const fs = require("fs");
 const path = require("path");
 
@@ -65,6 +65,7 @@ async function changePassword(req, res, next) {
       where: { id: employee.id },
       data: { passwordHash, mustChangePassword: false },
     });
+    await revokeUserSessions(employee.id, "employee");
 
     res.json({ success: true, message: "Password changed successfully" });
   } catch (err) {

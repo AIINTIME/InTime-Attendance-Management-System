@@ -2,6 +2,7 @@ const { body, validationResult } = require("express-validator");
 const authService = require("../services/authService");
 const { ApiError } = require("../middleware/errorMiddleware");
 const { accessCookieOptions, refreshCookieOptions } = require("../utils/jwt");
+const { clearCsrfCookieOptions } = require("../middleware/csrfMiddleware");
 const prisma = require("../config/prisma");
 
 function assertValid(req) {
@@ -17,8 +18,12 @@ function setAuthCookies(res, accessToken, refreshToken) {
 }
 
 function clearAuthCookies(res) {
-  res.clearCookie("accessToken", { path: "/" });
-  res.clearCookie("refreshToken", { path: "/" });
+  const { maxAge: _accessMaxAge, ...accessClearOptions } = accessCookieOptions();
+  const { maxAge: _refreshMaxAge, ...refreshClearOptions } = refreshCookieOptions();
+
+  res.clearCookie("accessToken", accessClearOptions);
+  res.clearCookie("refreshToken", refreshClearOptions);
+  res.clearCookie("csrfToken", clearCsrfCookieOptions());
 }
 
 const employeeLoginValidators = [
@@ -68,7 +73,12 @@ async function refresh(req, res, next) {
   }
 }
 
-async function logout(req, res) {
+async function logout(req, res, next) {
+  try {
+    await authService.revokeRefreshSession(req.cookies?.refreshToken);
+  } catch (err) {
+    return next(err);
+  }
   clearAuthCookies(res);
   res.json({ success: true, message: "Logged out" });
 }

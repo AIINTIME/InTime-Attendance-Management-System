@@ -132,3 +132,21 @@ model PasskeyCredential {
 
   @@index([employeeId])
 }
+
+model AuthSession {
+  id               String    @id @default(cuid())
+  userId           String
+  role             String
+  tokenId          String    @unique
+  refreshTokenHash String
+  authWeek         String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  lastUsedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([userId, role])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}

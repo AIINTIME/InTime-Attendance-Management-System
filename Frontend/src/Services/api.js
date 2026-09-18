@@ -6,6 +6,17 @@ const api = axios.create({
   withCredentials: true,
 });
 
+const unsafeMethods = new Set(["post", "put", "patch", "delete"]);
+
+function getCookie(name) {
+  const encodedName = `${encodeURIComponent(name)}=`;
+  return document.cookie
+    .split(";")
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith(encodedName))
+    ?.slice(encodedName.length);
+}
+
 let isRefreshing = false;
 let pendingQueue = [];
 
@@ -22,6 +33,18 @@ let onAuthExpired = () => {
 export function setOnAuthExpired(handler) {
   onAuthExpired = handler;
 }
+
+api.interceptors.request.use((config) => {
+  const method = (config.method || "get").toLowerCase();
+  const csrfToken = unsafeMethods.has(method) ? getCookie("csrfToken") : "";
+
+  if (csrfToken) {
+    config.headers = config.headers || {};
+    config.headers["X-CSRF-Token"] = decodeURIComponent(csrfToken);
+  }
+
+  return config;
+});
 
 api.interceptors.response.use(
   (response) => response,

@@ -62,9 +62,10 @@ cp Frontend/.env.example Frontend/.env
 `Backend/.env` — at minimum, set:
 
 ```env
-MONGODB_URI=<your MongoDB Atlas connection string>
-JWT_ACCESS_SECRET=<random string, e.g. `openssl rand -hex 48`>
-JWT_REFRESH_SECRET=<a different random string>
+DATABASE_URL=<your Postgres connection string>
+JWT_ACCESS_SECRET=<strong random string, e.g. `openssl rand -hex 64`>
+JWT_REFRESH_SECRET=<a different strong random string>
+ENFORCE_HTTPS=true
 SEED_ADMIN_EMAIL=<the first admin's email>
 SEED_ADMIN_PASSWORD=<the first admin's password>
 ```
@@ -178,14 +179,17 @@ and update `WEBAUTHN_ORIGIN`/`WEBAUTHN_RP_ID` to match.
 
 ## Production Deployment Notes
 
-- Set `NODE_ENV=production` on the backend — this enables `secure` and
-  `sameSite=none` cookies (required if frontend and backend are on
-  different domains) and disables verbose request logging.
+- Set `NODE_ENV=production` and `ENFORCE_HTTPS=true` on the backend.
+  `ENFORCE_HTTPS=true` is also required for staging, tunnels, demos, or
+  any shared environment beyond localhost; it enables `secure` and
+  `sameSite=none` cookies and strict configured-origin CORS.
 - Serve the frontend build (`npm run build` → `Frontend/dist`) from a
   static host or CDN, and point `VITE_API_URL` at the real backend origin.
 - Set `CLIENT_URL`, `WEBAUTHN_ORIGIN`, and `WEBAUTHN_RP_ID` to your real
-  production domain.
-- Use strong, unique values for `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET`.
+  HTTPS domain. Startup fails if shared/non-local HTTP origins are used.
+- Use strong, unique values for `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET`
+  with at least 32 characters each. Production startup fails if required
+  values are missing, weak, duplicated, or placeholder-like.
 
 ## API Overview
 
