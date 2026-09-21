@@ -7,10 +7,12 @@ function signAccessToken(payload) {
   });
 }
 
-function signRefreshToken(payload) {
-  return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
+function signRefreshToken(payload, tokenId) {
+  const options = {
     expiresIn: env.REFRESH_TOKEN_EXPIRES_IN,
-  });
+  };
+  if (tokenId) options.jwtid = tokenId;
+  return jwt.sign(payload, env.JWT_REFRESH_SECRET, options);
 }
 
 function verifyAccessToken(token) {
@@ -23,8 +25,8 @@ function verifyRefreshToken(token) {
 
 const COOKIE_BASE_OPTIONS = {
   httpOnly: true,
-  secure: env.NODE_ENV === "production",
-  sameSite: env.NODE_ENV === "production" ? "none" : "lax",
+  secure: env.ENFORCE_HTTPS,
+  sameSite: env.ENFORCE_HTTPS ? "none" : "lax",
   path: "/",
 };
 

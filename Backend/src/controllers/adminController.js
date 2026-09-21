@@ -4,7 +4,7 @@ const { ApiError } = require("../middleware/errorMiddleware");
 const { hashPassword, comparePassword } = require("../utils/password");
 const { getWorkingDateKey } = require("../utils/timezone");
 const attendanceService = require("../services/attendanceService");
-const { toPublicAdmin } = require("../services/authService");
+const { revokeUserSessions, toPublicAdmin } = require("../services/authService");
 const { sanitizeEmployee } = require("../utils/serialize");
 
 function assertValid(req) {
@@ -315,6 +315,7 @@ async function resetEmployeePassword(req, res, next) {
       where: { id: existing.id },
       data: { passwordHash, mustChangePassword: true },
     });
+    await revokeUserSessions(existing.id, "employee");
 
     res.json({ success: true, message: "Password reset successfully", data: { temporaryPassword } });
   } catch (err) {
@@ -462,6 +463,7 @@ async function changeOwnPassword(req, res, next) {
     }
     const passwordHash = await hashPassword(req.body.newPassword);
     await prisma.admin.update({ where: { id: admin.id }, data: { passwordHash } });
+    await revokeUserSessions(admin.id, "admin");
     res.json({ success: true, message: "Password changed successfully" });
   } catch (err) {
     next(err);

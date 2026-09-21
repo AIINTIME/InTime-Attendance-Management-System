@@ -8,6 +8,7 @@ const path = require("path");
 const env = require("./config/env");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 const { apiLimiter } = require("./middleware/rateLimitMiddleware");
+const { csrfProtection } = require("./middleware/csrfMiddleware");
 
 const authRoutes = require("./routes/authRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
@@ -28,16 +29,21 @@ app.use(
 );
 
 const allowedOrigins = new Set([env.CLIENT_URL, ...env.WEBAUTHN_ORIGIN]);
-// Requests normally reach the backend only through the Vite dev proxy
-// (same-origin from the browser's point of view), but the proxy forwards
-// the original Origin header, so CORS still sees whatever host served the
-// page -- localhost, a LAN IP (npm run dev -- --host, different every
-// network), or a tunnel domain. The LAN IP can't be listed in advance, so
-// non-production reflects any origin; production keeps the strict list.
+function isLocalDevelopmentOrigin(origin) {
+  if (env.ENFORCE_HTTPS) return false;
+
+  try {
+    const { protocol, hostname } = new URL(origin);
+    return protocol === "http:" && ["localhost", "127.0.0.1", "::1"].includes(hostname);
+  } catch (err) {
+    return false;
+  }
+}
+
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || env.NODE_ENV !== "production" || allowedOrigins.has(origin)) {
+      if (!origin || allowedOrigins.has(origin) || isLocalDevelopmentOrigin(origin)) {
         return callback(null, true);
       }
       callback(new Error("Not allowed by CORS"));
@@ -48,6 +54,7 @@ app.use(
 
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
+app.use(csrfProtection);
 
 if (env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
