@@ -23,7 +23,7 @@ export default function EmployeeLogin() {
   useEffect(() => {
     if (!authLoading && user) {
       if (user.role === "admin" || user.role === "manager") {
-        navigate("/admin/dashboard", { replace: true });
+        navigate("/admin/attendance", { replace: true });
       } else {
         navigate("/employee/home", { replace: true });
       }
@@ -61,7 +61,7 @@ export default function EmployeeLogin() {
         try {
           await loginAsAdmin(email.trim(), password);
           toast.success("Welcome back, Admin!");
-          navigate("/admin/dashboard", { replace: true });
+          navigate("/admin/attendance", { replace: true });
           return;
         } catch (adminErr) {
           setError(

@@ -29,7 +29,7 @@ function RootRedirect() {
   const { user, isLoading } = useAuth();
   if (isLoading) return <FullScreenLoader />;
   if (user?.role === "employee") return <Navigate to="/employee/home" replace />;
-  if (user?.role === "admin") return <Navigate to="/admin/dashboard" replace />;
+  if (user?.role === "admin") return <Navigate to="/admin/attendance" replace />;
   return <Navigate to="/employee/login" replace />;
 }
 
@@ -55,6 +55,7 @@ export default function AppRoutes() {
 
       <Route element={<AdminRoute />}>
         <Route element={<AdminLayout />}>
+          <Route path="/admin" element={<Navigate to="/admin/attendance" replace />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/employees" element={<EmployeeManagement />} />
           <Route path="/admin/employees/:id" element={<EmployeeDetails />} />

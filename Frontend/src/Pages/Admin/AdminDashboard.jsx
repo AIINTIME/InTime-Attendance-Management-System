@@ -26,6 +26,7 @@ import {
   Cell,
 } from "recharts";
 import { useToast } from "../../Context/ToastContext";
+import { getDashboard } from "../../Services/adminService";
 import "../../Styles/AdminDashboard.css";
 
 // ══════════════════════════ SAMPLE DATA ══════════════════════════
@@ -289,12 +290,43 @@ export default function AdminDashboard() {
   const [weeklyFilter, setWeeklyFilter] = useState("This Week");
   const [monthlyFilter, setMonthlyFilter] = useState("September 2025");
   const [approvals, setApprovals] = useState(INITIAL_APPROVALS);
+  const [metrics, setMetrics] = useState({ totalEmployees: 0, presentToday: 0 });
 
   // Live timer for top-right clock
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Fetch real attendance/employee counts for the 4 metric cards
+  useEffect(() => {
+    let mounted = true;
+    getDashboard()
+      .then((data) => {
+        if (mounted) {
+          setMetrics({
+            totalEmployees: data?.totalEmployees || 0,
+            presentToday: data?.presentToday || 0,
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load dashboard metrics:", err);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const totalEmployees = metrics.totalEmployees;
+  const presentToday = metrics.presentToday;
+  const absentToday = Math.max(totalEmployees - presentToday, 0);
+  const onLeaveToday = 0; // Leave feature not built yet -- always 0 for now.
+
+  const pct = (count) => (totalEmployees > 0 ? Math.round((count / totalEmployees) * 100) : 0);
+  const presentPct = pct(presentToday);
+  const absentPct = pct(absentToday);
+  const onLeavePct = 0;
 
   // Format live current date and time with seconds matching the screenshot
   const formatCurrentDateTime = (date) => {
@@ -361,10 +393,8 @@ export default function AdminDashboard() {
               <Users size={22} className="admin-card-icon-svg blue" fill="#0074F1" color="#0074F1" />
             </div>
             <div className="admin-card-info">
-              <div className="admin-card-num">124</div>
+              <div className="admin-card-num">{totalEmployees}</div>
               <div className="admin-card-title">Total Employees</div>
-              <div className="admin-card-trend up">↑ 5%</div>
-              <div className="admin-card-trend-sub">vs last month</div>
             </div>
           </div>
           <div className="admin-card-watermark-wrap">
@@ -381,14 +411,12 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className="admin-card-info">
-              <div className="admin-card-num">98</div>
+              <div className="admin-card-num">{presentToday}</div>
               <div className="admin-card-title">Present Today</div>
-              <div className="admin-card-trend up">↑ 12%</div>
-              <div className="admin-card-trend-sub">vs yesterday</div>
             </div>
           </div>
           <div className="admin-card-pct-ring green">
-            <span>79%</span>
+            <span>{presentPct}%</span>
           </div>
         </div>
 
@@ -401,14 +429,12 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className="admin-card-info">
-              <div className="admin-card-num">12</div>
+              <div className="admin-card-num">{absentToday}</div>
               <div className="admin-card-title">Absent Today</div>
-              <div className="admin-card-trend down">↓ 3%</div>
-              <div className="admin-card-trend-sub">vs yesterday</div>
             </div>
           </div>
           <div className="admin-card-pct-ring red">
-            <span>10%</span>
+            <span>{absentPct}%</span>
           </div>
         </div>
 
@@ -421,14 +447,12 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className="admin-card-info">
-              <div className="admin-card-num">8</div>
+              <div className="admin-card-num">{onLeaveToday}</div>
               <div className="admin-card-title">On Leave</div>
-              <div className="admin-card-trend neutral">→ 0%</div>
-              <div className="admin-card-trend-sub">vs yesterday</div>
             </div>
           </div>
           <div className="admin-card-pct-ring amber">
-            <span>6%</span>
+            <span>{onLeavePct}%</span>
           </div>
         </div>
       </div>
